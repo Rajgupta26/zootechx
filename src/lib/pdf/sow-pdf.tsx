@@ -3,15 +3,16 @@ import {
   Document, Page, Text, View, StyleSheet, renderToBuffer,
 } from '@react-pdf/renderer';
 import type { ParsedSection } from '@/lib/sow/parse';
-import { CONTENT, Letterhead } from './letterhead';
+import { PROPOSAL, ProposalStationery } from './letterhead';
 
 /**
  * ZootechX proposal document.
  *
- * Renders parsed sections onto the company letterhead (see ./letterhead) in
- * the house format: numbered headings, bulleted bodies, two-column tables for
- * pricing, and a client/provider sign-off block at the end. The stationery —
- * logo, wave, watermark and footer — repeats on every page.
+ * Follows the supplied Statement of Work sample rather than the invoice
+ * letterhead: smaller logo with the angular corner motif, a centred title
+ * block over a hairline rule, 10.5pt body and 18pt numbered headings, and the
+ * one-line address footer. Type sizes and positions are the sample's own,
+ * measured from it (see ./letterhead).
  *
  * No page numbers: a `fixed` Text using the dynamic `render` prop makes the
  * layout engine emit impossible coordinates once the document spans pages
@@ -20,36 +21,42 @@ import { CONTENT, Letterhead } from './letterhead';
 
 const s = StyleSheet.create({
   page: {
-    paddingTop: CONTENT.top, paddingBottom: CONTENT.bottom, paddingHorizontal: CONTENT.side,
-    fontSize: 9.5, fontFamily: 'Helvetica', color: '#111111', lineHeight: 1.5,
+    paddingTop: PROPOSAL.top, paddingBottom: PROPOSAL.bottom,
+    paddingHorizontal: PROPOSAL.side,
+    fontSize: 10.5, fontFamily: 'Helvetica', color: '#000000', lineHeight: 1.45,
   },
 
-  docTitle: { fontSize: 16, fontFamily: 'Helvetica-Bold', marginBottom: 2 },
-  docSub: { fontSize: 10, color: '#444444', marginBottom: 4 },
-  metaLine: { fontSize: 8.5, color: '#666666', marginBottom: 14 },
-  rule: { borderBottomWidth: 1.5, borderBottomColor: '#111111', marginBottom: 16 },
+  docTitle: { fontSize: 22, fontFamily: 'Helvetica-Bold', textAlign: 'center' },
+  docSub: {
+    fontSize: 14.5, fontFamily: 'Helvetica-Bold', textAlign: 'center',
+    marginTop: 18.5, lineHeight: 1.29,
+  },
+  metaLine: { fontSize: 8.5, textAlign: 'center', color: '#555555' },
+  rule: {
+    borderBottomWidth: 0.5, borderBottomColor: '#000000',
+    marginTop: 9, marginBottom: 6,
+  },
 
-  h2: { fontSize: 11.5, fontFamily: 'Helvetica-Bold', marginTop: 14, marginBottom: 5 },
-  para: { marginBottom: 3, textAlign: 'justify' },
-  bullet: { flexDirection: 'row', marginBottom: 2.5, paddingLeft: 6 },
-  bulletDot: { width: 10 },
-  bulletText: { flex: 1, textAlign: 'justify' },
+  h2: { fontSize: 18, fontFamily: 'Helvetica-Bold', marginTop: 18, marginBottom: 7 },
+  para: { marginBottom: 6 },
+  bullet: { flexDirection: 'row', marginBottom: 3, paddingLeft: 10 },
+  bulletDot: { width: 12 },
+  bulletText: { flex: 1 },
 
-  table: { borderWidth: 1, borderColor: '#111111', marginTop: 6, marginBottom: 6 },
+  table: { borderWidth: 0.75, borderColor: '#000000', marginTop: 8, marginBottom: 8 },
   tHead: {
     flexDirection: 'row', backgroundColor: '#f0f0f0',
-    borderBottomWidth: 1, borderBottomColor: '#111111', fontFamily: 'Helvetica-Bold',
+    borderBottomWidth: 0.75, borderBottomColor: '#000000', fontFamily: 'Helvetica-Bold',
   },
   tRow: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#999999' },
-  tScope: { flex: 1, padding: 5, borderRightWidth: 1, borderRightColor: '#111111' },
-  tCost: { width: 130, padding: 5, textAlign: 'right' },
+  tScope: { flex: 1, padding: 5, borderRightWidth: 0.75, borderRightColor: '#000000' },
+  tCost: { width: 120, padding: 5, textAlign: 'right' },
 
   signWrap: { flexDirection: 'row', marginTop: 26 },
-  signBox: { flex: 1, borderWidth: 1, borderColor: '#111111', padding: 10, marginRight: 14 },
+  signBox: { flex: 1, borderWidth: 0.75, borderColor: '#000000', padding: 10, marginRight: 14 },
   signTitle: { fontFamily: 'Helvetica-Bold', marginBottom: 8 },
-  signField: { marginBottom: 12, fontSize: 9 },
+  signField: { marginBottom: 12, fontSize: 9.5 },
   signLine: { borderBottomWidth: 0.75, borderBottomColor: '#555555', marginTop: 12 },
-
 });
 
 export interface SowPdfData {
@@ -74,15 +81,16 @@ const fmtDate = (d: Date) =>
   d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
 export function SowDocument({ data }: { data: SowPdfData }) {
-  const sym = data.currency === 'INR' ? 'Rs.' : '$';
-
   return (
     <Document title={`${data.number} — ${data.title}`} author={data.company.legalName}>
       <Page size="A4" style={s.page}>
-        <Letterhead company={data.company} />
+        <ProposalStationery company={data.company} />
 
         <Text style={s.docTitle}>Statement of Work (SOW)</Text>
         <Text style={s.docSub}>{data.title}</Text>
+        {/* Not in the sample, which carries its reference elsewhere. Kept small
+            and grey: a signed proposal that cannot be cited by number is worse
+            than one with a quiet subtitle. */}
         <Text style={s.metaLine}>
           {data.number}   ·   Prepared for {data.clientLegalName || data.clientName}   ·   {fmtDate(data.issueDate)}
         </Text>
@@ -99,7 +107,7 @@ export function SowDocument({ data }: { data: SowPdfData }) {
           */}
         {data.sections.map((section, i) => (
           <React.Fragment key={i}>
-            <Text style={s.h2} minPresenceAhead={46}>
+            <Text style={s.h2} minPresenceAhead={56}>
               {section.number ? `${section.number}. ` : ''}{section.title}
             </Text>
 
@@ -117,7 +125,10 @@ export function SowDocument({ data }: { data: SowPdfData }) {
             })}
 
             {section.table && (
-              <View style={s.table}>
+              // Held together: a price table that splits leaves the Total alone
+              // at the top of the next page. Tables too tall for one page are
+              // allowed to break rather than overflow.
+              <View style={s.table} wrap={section.table.rows.length > 24}>
                 <View style={s.tHead}>
                   <Text style={s.tScope}>{section.table.columns[0]}</Text>
                   <Text style={s.tCost}>{section.table.columns[1]}</Text>
@@ -157,7 +168,7 @@ export function SowDocument({ data }: { data: SowPdfData }) {
         </View>
 
         {data.signature && (
-          <Text style={{ marginTop: 8, fontSize: 7.5, color: '#555555' }}>
+          <Text style={{ marginTop: 8, fontSize: 8, color: '#555555' }}>
             Signed electronically by {data.signature.signerName} on{' '}
             {fmtDate(data.signature.signedAt)} from IP {data.signature.ipAddress}.
           </Text>
