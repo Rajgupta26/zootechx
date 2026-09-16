@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Building2 } from 'lucide-react';
-import { getCurrentUser } from '@/lib/session';
+import { getCurrentUser, INVALIDATE_SESSION_URL } from '@/lib/session';
 import { prisma } from '@/lib/db';
 import { UserMenu } from '@/components/layout/user-menu';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
@@ -15,7 +15,7 @@ import { PortalNav } from './portal-nav';
  */
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
-  if (!user) redirect('/login');
+  if (!user) redirect(INVALIDATE_SESSION_URL);
   if (user.role !== 'CLIENT') redirect('/dashboard');
   if (!user.clientId) {
     return (

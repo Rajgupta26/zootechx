@@ -1,4 +1,7 @@
 import type { Config } from 'tailwindcss';
+// Imported rather than require()d: Node loads this .ts config as ESM, where
+// `require` is not defined.
+import animate from 'tailwindcss-animate';
 
 const config: Config = {
   darkMode: ['class'],
@@ -43,7 +46,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [animate],
 };
 
 export default config;

@@ -1,10 +1,12 @@
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
-import { getCurrentUser } from '@/lib/session';
+import { getCurrentUser, INVALIDATE_SESSION_URL } from '@/lib/session';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
-  if (!user) redirect('/login');
+  // Clear the cookie rather than redirect to /login, which middleware would
+  // bounce straight back here on a stale-but-valid JWT.
+  if (!user) redirect(INVALIDATE_SESSION_URL);
   // Client-portal accounts live under /portal and must never render this shell.
   if (user.role === 'CLIENT') redirect('/portal');
 
