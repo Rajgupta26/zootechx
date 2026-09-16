@@ -81,6 +81,8 @@ export async function renderAndStoreSignedSow(sowId: string): Promise<string | n
       signature: sow.signature
         ? {
             signerName: sow.signature.signerName,
+            signerTitle: sow.signature.signerTitle,
+            signatureData: sow.signature.signatureData,
             signedAt: sow.signature.signedAt,
             ipAddress: sow.signature.ipAddress,
           }

@@ -25,6 +25,13 @@ export function SignForm({ token, sowNumber }: { token: string; sowNumber: strin
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  // Whatever is typed here is printed on the contract as the client's mark, so
+  // it has to be their name. Checked here for a live hint and again on the
+  // server, which is the check that actually decides.
+  const nameKey = (v: string) =>
+    v.toLowerCase().replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+  const signatureMatches = nameKey(signature) === nameKey(signerName);
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -37,7 +44,8 @@ export function SignForm({ token, sowNumber }: { token: string; sowNumber: strin
       });
 
       if (!res.ok) {
-        setError(res.error ?? 'Could not record the signature.');
+        const field = Object.values(res.fieldErrors ?? {})[0]?.[0];
+        setError(field ?? res.error ?? 'Could not record the signature.');
         return;
       }
       setDone(true);
@@ -103,7 +111,17 @@ export function SignForm({ token, sowNumber }: { token: string; sowNumber: strin
             onChange={(e) => setSignature(e.target.value)}
             placeholder="Your signature"
             className="font-serif text-lg italic"
+            aria-invalid={signature.length > 0 && !signatureMatches}
           />
+          {signature.length > 0 && !signatureMatches ? (
+            <p className="text-xs text-destructive">
+              This must match the full name you entered above.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              This appears as your signature on the signed document.
+            </p>
+          )}
         </div>
       </div>
 
@@ -127,7 +145,7 @@ export function SignForm({ token, sowNumber }: { token: string; sowNumber: strin
         type="submit"
         className="mt-5 w-full"
         loading={pending}
-        disabled={!consent || !signerName || !signerEmail || !signature}
+        disabled={!consent || !signerName || !signerEmail || !signature || !signatureMatches}
       >
         Sign {sowNumber}
       </Button>

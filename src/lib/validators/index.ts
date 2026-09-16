@@ -134,16 +134,28 @@ export const sowSchema = z.object({
   endDate: z.string().optional(),
 });
 
-export const sowSignSchema = z.object({
-  token: z.string().min(1),
-  signerName: z.string().min(2, 'Enter your full name').max(120),
-  signerEmail: z.string().email('Enter a valid email'),
-  signerTitle: z.string().max(120).optional(),
-  signature: z.string().min(2, 'Type your name to sign'),
-  consent: z.literal(true, {
-    errorMap: () => ({ message: 'You must accept to sign electronically' }),
-  }),
-});
+/** Letters only, single-spaced, lowercased — so "P. Sharma " matches "p sharma". */
+const nameKey = (value: string) =>
+  value.toLowerCase().replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+
+export const sowSignSchema = z
+  .object({
+    token: z.string().min(1),
+    signerName: z.string().min(2, 'Enter your full name').max(120),
+    signerEmail: z.string().email('Enter a valid email'),
+    signerTitle: z.string().max(120).optional(),
+    signature: z.string().min(2, 'Type your name to sign'),
+    consent: z.literal(true, {
+      errorMap: () => ({ message: 'You must accept to sign electronically' }),
+    }),
+  })
+  // The typed signature is printed on the countersigned contract as the
+  // client's mark, so it has to be their name and not arbitrary characters.
+  // A drawn signature arrives as a data URL and is exempt.
+  .refine(
+    (v) => v.signature.startsWith('data:image/') || nameKey(v.signature) === nameKey(v.signerName),
+    { path: ['signature'], message: 'Your signature must match the full name you entered.' }
+  );
 
 // ---------- Delivery ----------
 

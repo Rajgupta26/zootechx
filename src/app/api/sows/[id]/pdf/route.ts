@@ -9,7 +9,7 @@ import { getStorageProvider } from '@/lib/integrations/storage';
 
 export const dynamic = 'force-dynamic';
 
-/** Render a proposal onto the company letterhead. */
+/** Render a proposal in the house Statement of Work template. */
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -51,6 +51,8 @@ export async function GET(
     signature: sow.signature
       ? {
           signerName: sow.signature.signerName,
+          signerTitle: sow.signature.signerTitle,
+          signatureData: sow.signature.signatureData,
           signedAt: sow.signature.signedAt,
           ipAddress: sow.signature.ipAddress,
         }

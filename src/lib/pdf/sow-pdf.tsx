@@ -1,9 +1,9 @@
 import React from 'react';
 import {
-  Document, Page, Text, View, StyleSheet, renderToBuffer,
+  Document, Page, Text, View, Image, StyleSheet, renderToBuffer,
 } from '@react-pdf/renderer';
 import type { ParsedSection } from '@/lib/sow/parse';
-import { PROPOSAL, ProposalStationery } from './letterhead';
+import { PROPOSAL, ProposalStationery, SIGNATURE } from './letterhead';
 
 /**
  * ZootechX proposal document.
@@ -56,7 +56,13 @@ const s = StyleSheet.create({
   signBox: { flex: 1, borderWidth: 0.75, borderColor: '#000000', padding: 10, marginRight: 14 },
   signTitle: { fontFamily: 'Helvetica-Bold', marginBottom: 8 },
   signField: { marginBottom: 12, fontSize: 9.5 },
-  signLine: { borderBottomWidth: 0.75, borderBottomColor: '#555555', marginTop: 12 },
+  /** Fixed so the ruled lines in both boxes sit at the same height. */
+  signFields: { minHeight: 78 },
+  signLine: { borderBottomWidth: 0.75, borderBottomColor: '#555555' },
+  /** The mark itself sits on the ruled line, as a wet signature would. */
+  signMark: { height: 30, justifyContent: 'flex-end', paddingBottom: 2 },
+  signTyped: { fontFamily: 'Times-Italic', fontSize: 16, color: '#1a237e' },
+  signDrawn: { height: 28, objectFit: 'contain', objectPosition: 'left bottom' },
 });
 
 export interface SowPdfData {
@@ -74,7 +80,14 @@ export interface SowPdfData {
   };
   /** Name that appears under Service Provider on the sign-off block. */
   signatoryName: string;
-  signature?: { signerName: string; signedAt: Date; ipAddress: string } | null;
+  signature?: {
+    signerName: string;
+    signerTitle?: string | null;
+    /** Typed name, or a data: URL when the signature was drawn. */
+    signatureData: string;
+    signedAt: Date;
+    ipAddress: string;
+  } | null;
 }
 
 const fmtDate = (d: Date) =>
@@ -148,9 +161,15 @@ export function SowDocument({ data }: { data: SowPdfData }) {
         <View style={s.signWrap} wrap={false}>
           <View style={s.signBox}>
             <Text style={s.signTitle}>Client</Text>
-            <Text style={s.signField}>Name: {data.signature?.signerName ?? ''}</Text>
-            <Text style={s.signField}>Company: {data.clientLegalName || data.clientName}</Text>
-            <Text style={s.signField}>Signature:</Text>
+            <View style={s.signFields}>
+              <Text style={s.signField}>Name: {data.signature?.signerName ?? ''}</Text>
+              {data.signature?.signerTitle ? (
+                <Text style={s.signField}>Title: {data.signature.signerTitle}</Text>
+              ) : null}
+              <Text style={s.signField}>Company: {data.clientLegalName || data.clientName}</Text>
+            </View>
+            <Text style={{ fontSize: 9.5 }}>Signature:</Text>
+            <SignatureMark data={data.signature?.signatureData} />
             <View style={s.signLine} />
             <Text style={[s.signField, { marginTop: 10 }]}>
               Date: {data.signature ? fmtDate(data.signature.signedAt) : ''}
@@ -159,9 +178,14 @@ export function SowDocument({ data }: { data: SowPdfData }) {
 
           <View style={s.signBox}>
             <Text style={s.signTitle}>Service Provider</Text>
-            <Text style={s.signField}>Name: {data.signatoryName}</Text>
-            <Text style={s.signField}>Company: {data.company.tradeName || data.company.legalName}</Text>
-            <Text style={s.signField}>Signature:</Text>
+            <View style={s.signFields}>
+              <Text style={s.signField}>Name: {data.signatoryName}</Text>
+              <Text style={s.signField}>Company: {data.company.tradeName || data.company.legalName}</Text>
+            </View>
+            <Text style={{ fontSize: 9.5 }}>Signature:</Text>
+            <View style={s.signMark}>
+              <Image src={SIGNATURE} style={s.signDrawn} />
+            </View>
             <View style={s.signLine} />
             <Text style={[s.signField, { marginTop: 10 }]}>Date: {fmtDate(data.issueDate)}</Text>
           </View>
@@ -175,6 +199,24 @@ export function SowDocument({ data }: { data: SowPdfData }) {
         )}
       </Page>
     </Document>
+  );
+}
+
+/**
+ * The signer's own mark, on the ruled line.
+ *
+ * The signing page captures a typed name today, but the column is documented
+ * as holding either that or a drawn signature as a data URL, so both are
+ * rendered. An unsigned proposal gets an empty line to sign by hand.
+ */
+function SignatureMark({ data }: { data?: string }) {
+  if (!data) return <View style={s.signMark} />;
+  return (
+    <View style={s.signMark}>
+      {data.startsWith('data:image/')
+        ? <Image src={data} style={s.signDrawn} />
+        : <Text style={s.signTyped}>{data}</Text>}
+    </View>
   );
 }
 
