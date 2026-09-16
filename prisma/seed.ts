@@ -183,7 +183,7 @@ async function main() {
     data: { name: 'Binoli Shah', email: 'admin@xcc.test', passwordHash: hash, role: 'SUPER_ADMIN', phone: '+91 98111 00001', department: 'Leadership' },
   });
   const subAdmin = await prisma.user.create({
-    data: { name: 'Aryan', email: 'ops@xcc.test', passwordHash: hash, role: 'SUB_ADMIN', phone: '+91 98111 00002', department: 'Operations' },
+    data: { name: 'Atharv', email: 'ops@xcc.test', passwordHash: hash, role: 'SUB_ADMIN', phone: '+91 98111 00002', department: 'Operations' },
   });
   const sales = await prisma.user.create({
     data: { name: 'Rohit', email: 'sales@xcc.test', passwordHash: hash, role: 'SALES', phone: '+91 98111 00003', department: 'Sales' },
