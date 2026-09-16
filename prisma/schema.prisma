@@ -1,0 +1,1378 @@
+// XCC CRM — PostgreSQL schema
+// Money is Decimal(14,2); rates are Decimal(6,3). Never use Float for money.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Role {
+  SUPER_ADMIN
+  SUB_ADMIN
+  SALES
+  DEVELOPER
+  MARKETING
+  CLIENT
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+/// Tax treatment is derived from company state vs place of supply.
+enum TaxTreatment {
+  INTRA_STATE // CGST + SGST (same state)
+  INTER_STATE // IGST (different state)
+  EXPORT_LUT // Zero-rated export under LUT/bond
+  EXPORT_WITH_TAX // Export with IGST paid, refund claimed
+  EXEMPT // Exempt / nil-rated
+}
+
+/// How the single "Total Amount" field in the quick-invoice modal is read.
+enum AmountBasis {
+  EXCLUSIVE // entered amount is taxable value; tax added on top  (project default)
+  INCLUSIVE // entered amount is gross; taxable value back-calculated
+}
+
+enum Currency {
+  INR
+  USD
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  NEGOTIATION
+  WON
+  LOST
+  DORMANT
+}
+
+enum LeadSource {
+  WEBSITE
+  REFERRAL
+  META_ADS
+  GOOGLE_ADS
+  LINKEDIN
+  COLD_OUTREACH
+  EVENT
+  WHATSAPP
+  OTHER
+}
+
+enum FollowUpChannel {
+  EMAIL
+  WHATSAPP
+  CALL
+  MEETING
+  SMS
+}
+
+enum FollowUpStatus {
+  PENDING
+  DONE
+  MISSED
+  CANCELLED
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum SowStatus {
+  DRAFT
+  SENT
+  VIEWED
+  SIGNED
+  REJECTED
+  EXPIRED
+  REVOKED
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  ON_HOLD
+  QA
+  DELIVERED
+  CLOSED
+  CANCELLED
+}
+
+enum MilestoneStatus {
+  PENDING
+  IN_PROGRESS
+  BLOCKED
+  COMPLETED
+  APPROVED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  REVIEW
+  DONE
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum IssueStatus {
+  OPEN
+  TRIAGED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  WONT_FIX
+}
+
+enum InvoiceKind {
+  TAX_INVOICE
+  PROFORMA
+  CREDIT_NOTE
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING_APPROVAL
+  SENT
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+  WRITTEN_OFF
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  RAZORPAY
+  STRIPE
+  BANK_TRANSFER
+  UPI
+  CHEQUE
+  CASH
+  OTHER
+}
+
+enum RecurrenceInterval {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum ExpenseCategory {
+  SALARY
+  SOFTWARE
+  AD_SPEND
+  INFRASTRUCTURE
+  CONTRACTOR
+  OFFICE
+  TRAVEL
+  TAX
+  OTHER
+}
+
+enum ExpenseStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  REIMBURSED
+}
+
+enum AdPlatform {
+  META
+  GOOGLE
+  LINKEDIN
+  YOUTUBE
+  X
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum CreativeStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  LIVE
+  ARCHIVED
+}
+
+enum MessageChannel {
+  EMAIL
+  WHATSAPP
+}
+
+enum MessageStatus {
+  QUEUED
+  SENDING
+  SENT
+  DELIVERED
+  FAILED
+  DEAD_LETTER
+}
+
+enum NotificationType {
+  FOLLOWUP_OVERDUE
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  SOW_SIGNED
+  SOW_VIEWED
+  INVOICE_SENT
+  INVOICE_OVERDUE
+  LEAD_ASSIGNED
+  LEAD_SYNCED
+  TASK_ASSIGNED
+  MILESTONE_COMPLETED
+  CREDENTIAL_REVEALED
+  SYSTEM
+}
+
+enum SecretSensitivity {
+  STANDARD
+  CRITICAL // requires sudo re-auth to reveal
+}
+
+enum ShareLinkKind {
+  SOW
+  INVOICE
+  PORTAL_INVITE
+}
+
+// ============================================================
+// IDENTITY, RBAC, AUDIT
+// ============================================================
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  phone        String?
+  passwordHash String?
+  role         Role
+  status       UserStatus @default(ACTIVE)
+  avatarUrl    String?
+  department   String?
+
+  // Client-portal users are bound to exactly one client company.
+  clientId String?
+  client   Client? @relation("ClientPortalUsers", fields: [clientId], references: [id], onDelete: Cascade)
+
+  twoFactorSecret  String?
+  twoFactorEnabled Boolean   @default(false)
+  lastLoginAt      DateTime?
+  /// Sudo (re-auth) window for revealing CRITICAL secrets.
+  sudoUntil        DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  grants           PermissionGrant[]
+  sessions         Session[]
+  auditLogs        AuditLog[]
+  ownedLeads       Lead[]             @relation("LeadOwner")
+  createdLeads     Lead[]             @relation("LeadCreator")
+  accountManaged   Client[]           @relation("AccountManager")
+  followUps        FollowUp[]         @relation("FollowUpAssignee")
+  quotations       Quotation[]
+  sows             Sow[]
+  projectsLed      Project[]          @relation("ProjectLead")
+  projectMembers   ProjectMember[]
+  progressLogs     ProgressLog[]
+  issuesReported   Issue[]            @relation("IssueReporter")
+  issuesAssigned   Issue[]            @relation("IssueAssignee")
+  tasksAssigned    Task[]             @relation("TaskAssignee")
+  tasksCreated     Task[]             @relation("TaskCreator")
+  invoicesCreated  Invoice[]          @relation("InvoiceCreator")
+  paymentsRecorded Payment[]          @relation("PaymentRecorder")
+  expenses         Expense[]          @relation("ExpenseOwner")
+  expensesApproved Expense[]          @relation("ExpenseApprover")
+  credentials      Credential[]
+  credentialAccess CredentialAccess[]
+  notifications    Notification[]
+  brandsOwned      Brand[]
+
+  @@index([role, status])
+  @@index([clientId])
+  @@index([email])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  ip           String?
+  userAgent    String?
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Per-resource ACL on top of the role matrix.
+/// Used for "permitted credentials" and any other explicit grant.
+model PermissionGrant {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resource     String // e.g. "credential", "project", "brand"
+  resourceId   String? // null = all records of this resource
+  action       String // "read" | "write" | "delete" | "reveal"
+  grantedById  String?
+  grantedAt    DateTime  @default(now())
+  expiresAt    DateTime?
+
+  @@unique([userId, resource, resourceId, action])
+  @@index([userId, resource])
+}
+
+/// Append-only, hash-chained audit trail.
+/// `hash = sha256(prevHash + canonical(entry))` — any deletion or edit breaks the chain.
+model AuditLog {
+  id         String   @id @default(cuid())
+  seq        BigInt   @unique @default(autoincrement())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorEmail String? // denormalised so the trail survives user deletion
+  actorRole  Role?
+  action     String // "invoice.create", "credential.reveal", "user.role_change"
+  entity     String
+  entityId   String?
+  summary    String
+  metadata   Json?
+  ip         String?
+  userAgent  String?
+  prevHash   String?
+  hash       String
+  createdAt  DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([actorId, createdAt])
+  @@index([createdAt])
+  @@index([action])
+}
+
+// ============================================================
+// COMPANY SETTINGS (singleton)
+// ============================================================
+
+model CompanyProfile {
+  id        String @id @default("default")
+  legalName String
+  tradeName String?
+  gstin     String?
+  pan       String?
+  cin       String?
+
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  /// GST state code, e.g. "27" for Maharashtra. Drives intra vs inter-state tax.
+  stateCode    String
+  stateName    String
+  postalCode   String
+  country      String  @default("India")
+
+  email     String
+  phone     String
+  website   String?
+  logoUrl   String?
+
+  bankName          String?
+  bankAccountName   String?
+  bankAccountNumber String?
+  bankIfsc          String?
+  bankSwift         String?
+  upiId             String?
+
+  // Billing defaults used by the 2-field quick-invoice engine
+  defaultGstRate     Decimal     @default(18.000) @db.Decimal(6, 3)
+  defaultSacCode     String      @default("998314")
+  defaultAmountBasis AmountBasis @default(EXCLUSIVE)
+  defaultPaymentTermDays Int     @default(15)
+  /// Zero-rate exports under a Letter of Undertaking (no IGST on USD invoices).
+  exportUnderLut     Boolean     @default(true)
+  /// TDS u/s 194J is deducted by the client; tracked so AR reconciles.
+  defaultTdsRate     Decimal     @default(10.000) @db.Decimal(6, 3)
+  applyTdsByDefault  Boolean     @default(false)
+  invoicePrefix      String      @default("XCC")
+  defaultTerms       String      @default("Payment due within 15 days. Interest @18% p.a. on overdue amounts.")
+  defaultNotes       String?
+
+  updatedAt DateTime @updatedAt
+}
+
+/// Gapless, per-financial-year invoice counters. Incremented inside a
+/// serialisable transaction so concurrent invoices never collide.
+model InvoiceSequence {
+  id       String      @id @default(cuid())
+  kind     InvoiceKind
+  /// Indian FY label, e.g. "26-27"
+  fyLabel  String
+  prefix   String
+  lastSeq  Int         @default(0)
+
+  @@unique([kind, fyLabel, prefix])
+}
+
+// ============================================================
+// SALES: LEADS, CLIENTS, FOLLOW-UPS
+// ============================================================
+
+model Lead {
+  id           String     @id @default(cuid())
+  name         String
+  company      String?
+  email        String?
+  phone        String?
+  /// Normalised (lowercased email / digits-only phone) for duplicate detection.
+  dedupeEmail  String?
+  dedupePhone  String?
+  source       LeadSource @default(OTHER)
+  sourceDetail String?
+  status       LeadStatus @default(NEW)
+  score        Int        @default(0)
+  estimatedValue Decimal? @db.Decimal(14, 2)
+  currency     Currency   @default(INR)
+  requirement  String?
+  city         String?
+  stateCode    String?
+
+  ownerId   String?
+  owner     User?   @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdById String?
+  createdBy User?   @relation("LeadCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  // Marketing sync provenance
+  campaignId String?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  externalId String? // e.g. Meta Lead Ads leadgen_id — used for idempotent sync
+
+  convertedClientId String?  @unique
+  convertedClient   Client?  @relation("LeadConversion", fields: [convertedClientId], references: [id], onDelete: SetNull)
+  convertedAt       DateTime?
+  lostReason        String?
+
+  lastContactedAt DateTime?
+  nextFollowUpAt  DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  followUps  FollowUp[]
+  activities Activity[]
+  quotations Quotation[]
+
+  @@unique([externalId])
+  @@index([status, ownerId])
+  @@index([ownerId, nextFollowUpAt])
+  @@index([dedupeEmail])
+  @@index([dedupePhone])
+  @@index([createdAt])
+  @@index([status, createdAt])
+}
+
+model Client {
+  id          String  @id @default(cuid())
+  name        String
+  legalName   String?
+  gstin       String?
+  pan         String?
+  email       String
+  phone       String?
+  website     String?
+
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  /// Place of supply. Compared against CompanyProfile.stateCode to pick CGST+SGST vs IGST.
+  stateCode    String?
+  stateName    String?
+  postalCode   String?
+  country      String  @default("India")
+
+  currency        Currency    @default(INR)
+  /// Overrides the derived treatment when set (e.g. SEZ clients).
+  taxTreatmentOverride TaxTreatment?
+  paymentTermDays Int         @default(15)
+  applyTds        Boolean     @default(false)
+  tdsRate         Decimal?    @db.Decimal(6, 3)
+
+  accountManagerId String?
+  accountManager   User?   @relation("AccountManager", fields: [accountManagerId], references: [id], onDelete: SetNull)
+
+  isActive  Boolean   @default(true)
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  portalUsers User[]        @relation("ClientPortalUsers")
+  contacts    ClientContact[]
+  fromLead    Lead?         @relation("LeadConversion")
+  followUps   FollowUp[]
+  quotations  Quotation[]
+  sows        Sow[]
+  projects    Project[]
+  invoices    Invoice[]
+  payments    Payment[]
+  expenses    Expense[]
+  brands      Brand[]
+  activities  Activity[]
+  recurring   RecurringInvoice[]
+
+  @@index([isActive, name])
+  @@index([accountManagerId])
+  @@index([email])
+}
+
+model ClientContact {
+  id        String  @id @default(cuid())
+  clientId  String
+  client    Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name      String
+  email     String
+  phone     String?
+  role      String?
+  isPrimary Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([clientId])
+}
+
+model FollowUp {
+  id       String          @id @default(cuid())
+  leadId   String?
+  lead     Lead?           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  clientId String?
+  client   Client?         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  channel  FollowUpChannel
+  status   FollowUpStatus  @default(PENDING)
+  subject  String
+  notes    String?
+  dueAt    DateTime
+  completedAt DateTime?
+  outcome  String?
+
+  assigneeId String?
+  assignee   User?   @relation("FollowUpAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([assigneeId, status, dueAt])
+  @@index([leadId])
+  @@index([clientId])
+  @@index([status, dueAt])
+}
+
+/// Generic timeline entry attached to a lead or client.
+model Activity {
+  id        String   @id @default(cuid())
+  leadId    String?
+  lead      Lead?    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  clientId  String?
+  client    Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  actorId   String?
+  type      String // "note" | "status_change" | "email_sent" | "call"
+  body      String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([leadId, createdAt])
+  @@index([clientId, createdAt])
+}
+
+// ============================================================
+// QUOTATIONS & SOW
+// ============================================================
+
+model Quotation {
+  id       String          @id @default(cuid())
+  number   String          @unique
+  leadId   String?
+  lead     Lead?           @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  clientId String?
+  client   Client?         @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  title    String
+  status   QuotationStatus @default(DRAFT)
+  currency Currency        @default(INR)
+
+  subTotal   Decimal  @default(0) @db.Decimal(14, 2)
+  discount   Decimal  @default(0) @db.Decimal(14, 2)
+  taxRate    Decimal  @default(18.000) @db.Decimal(6, 3)
+  taxAmount  Decimal  @default(0) @db.Decimal(14, 2)
+  total      Decimal  @default(0) @db.Decimal(14, 2)
+
+  validUntil DateTime?
+  notes      String?
+  terms      String?
+
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items QuotationItem[]
+  sows  Sow[]
+
+  @@index([status, createdAt])
+  @@index([clientId])
+}
+
+model QuotationItem {
+  id          String  @id @default(cuid())
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  description String
+  sacCode     String?
+  quantity    Decimal @default(1) @db.Decimal(12, 3)
+  unitPrice   Decimal @db.Decimal(14, 2)
+  amount      Decimal @db.Decimal(14, 2)
+  position    Int     @default(0)
+
+  @@index([quotationId])
+}
+
+model Sow {
+  id       String    @id @default(cuid())
+  number   String    @unique
+  title    String
+  clientId String
+  client   Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  quotationId String?
+  quotation   Quotation? @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+
+  status    SowStatus @default(DRAFT)
+  scope     String // markdown
+  deliverables String?
+  assumptions  String?
+  outOfScope   String?
+  timeline     String?
+  paymentTerms String?
+
+  currency Currency @default(INR)
+  value    Decimal  @default(0) @db.Decimal(14, 2)
+
+  startDate DateTime?
+  endDate   DateTime?
+
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  sentAt   DateTime?
+  viewedAt DateTime?
+  signedAt DateTime?
+  rejectedAt DateTime?
+  rejectionReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  milestones SowMilestone[]
+  signature  SowSignature?
+  shareLinks ShareLink[]
+  projects   Project[]
+  invoices   Invoice[]
+
+  @@index([clientId, status])
+  @@index([status, createdAt])
+}
+
+model SowMilestone {
+  id          String  @id @default(cuid())
+  sowId       String
+  sow         Sow     @relation(fields: [sowId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  /// Percent of SOW value billed at this milestone.
+  percentage  Decimal @db.Decimal(6, 3)
+  amount      Decimal @db.Decimal(14, 2)
+  dueDate     DateTime?
+  position    Int     @default(0)
+
+  invoices Invoice[]
+
+  @@index([sowId])
+}
+
+/// Legally meaningful e-signature record: who, when, from where, and what they signed.
+model SowSignature {
+  id          String   @id @default(cuid())
+  sowId       String   @unique
+  sow         Sow      @relation(fields: [sowId], references: [id], onDelete: Cascade)
+  signerName  String
+  signerEmail String
+  signerTitle String?
+  ipAddress   String
+  userAgent   String
+  /// Typed name or base64 PNG of the drawn signature.
+  signatureData String
+  /// Explicit consent to be legally bound (IT Act 2000 / ESIGN).
+  consentText   String
+  /// SHA-256 of the exact SOW content at signing time — proves what was agreed.
+  documentHash  String
+  signedAt      DateTime @default(now())
+
+  @@index([signerEmail])
+}
+
+/// Tokenised public link with auto-expiry and manual revocation.
+model ShareLink {
+  id        String        @id @default(cuid())
+  token     String        @unique
+  kind      ShareLinkKind
+  sowId     String?
+  sow       Sow?          @relation(fields: [sowId], references: [id], onDelete: Cascade)
+  invoiceId String?
+  invoice   Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  createdById String?
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  revokedById String?
+  viewCount   Int       @default(0)
+  lastViewedAt DateTime?
+  lastViewedIp String?
+  createdAt   DateTime  @default(now())
+
+  @@index([sowId])
+  @@index([invoiceId])
+  @@index([expiresAt])
+}
+
+// ============================================================
+// DELIVERY: PROJECTS, MILESTONES, ISSUES, TASKS
+// ============================================================
+
+model Project {
+  id          String        @id @default(cuid())
+  code        String        @unique
+  name        String
+  description String?
+  clientId    String
+  client      Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  sowId       String?
+  sow         Sow?          @relation(fields: [sowId], references: [id], onDelete: SetNull)
+  status      ProjectStatus @default(PLANNING)
+  priority    Priority      @default(MEDIUM)
+
+  leadDevId String?
+  leadDev   User?   @relation("ProjectLead", fields: [leadDevId], references: [id], onDelete: SetNull)
+
+  startDate    DateTime?
+  targetEndDate DateTime?
+  actualEndDate DateTime?
+  /// 0-100, recomputed from milestone completion.
+  progressPct  Int      @default(0)
+  budgetHours  Decimal? @db.Decimal(10, 2)
+  /// Visible to the client portal.
+  clientVisible Boolean @default(true)
+  repoUrl      String?
+  stagingUrl   String?
+  liveUrl      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members      ProjectMember[]
+  milestones   Milestone[]
+  progressLogs ProgressLog[]
+  issues       Issue[]
+  tasks        Task[]
+  invoices     Invoice[]
+  expenses     Expense[]
+
+  @@index([clientId, status])
+  @@index([status, targetEndDate])
+  @@index([leadDevId])
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleLabel String   @default("Developer")
+  addedAt   DateTime @default(now())
+
+  @@unique([projectId, userId])
+  @@index([userId])
+}
+
+model Milestone {
+  id          String          @id @default(cuid())
+  projectId   String
+  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      MilestoneStatus @default(PENDING)
+  dueDate     DateTime?
+  completedAt DateTime?
+  approvedAt  DateTime?
+  /// Shown on the client portal progress tracker.
+  clientVisible Boolean       @default(true)
+  position    Int             @default(0)
+  /// Amount billable on completion (drives milestone invoicing).
+  billableAmount Decimal?     @db.Decimal(14, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId, position])
+  @@index([status, dueDate])
+}
+
+model ProgressLog {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  logDate    DateTime @db.Date
+  hoursSpent Decimal  @default(0) @db.Decimal(6, 2)
+  summary    String
+  blockers   String?
+  nextSteps  String?
+  clientVisible Boolean @default(false)
+  createdAt  DateTime @default(now())
+
+  @@unique([projectId, authorId, logDate])
+  @@index([projectId, logDate])
+  @@index([authorId, logDate])
+}
+
+model Issue {
+  id          String      @id @default(cuid())
+  key         String      @unique
+  projectId   String
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      IssueStatus @default(OPEN)
+  severity    Priority    @default(MEDIUM)
+  stepsToReproduce String?
+  environment String?
+
+  reporterId String?
+  reporter   User?   @relation("IssueReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+  assigneeId String?
+  assignee   User?   @relation("IssueAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([projectId, status])
+  @@index([assigneeId, status])
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  priority    Priority   @default(MEDIUM)
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  assigneeId String?
+  assignee   User?   @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdById String?
+  createdBy  User?   @relation("TaskCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// Cross-departmental tagging, e.g. "sales", "marketing", "dev".
+  department String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([assigneeId, status, dueDate])
+  @@index([projectId, status])
+  @@index([status, dueDate])
+}
+
+// ============================================================
+// BILLING
+// ============================================================
+
+model Invoice {
+  id     String      @id @default(cuid())
+  kind   InvoiceKind @default(TAX_INVOICE)
+  /// Gapless, FY-scoped, immutable once issued. e.g. XCC/26-27/0001
+  number String      @unique
+  fyLabel String
+  seq     Int
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  // ---- Snapshots: a tax invoice must not change when the client record does ----
+  clientName       String
+  clientLegalName  String?
+  clientGstin      String?
+  clientEmail      String?
+  clientPhone      String?
+  billingAddress   String?
+  placeOfSupply    String? // GST state code
+  companySnapshot  Json // legal name, GSTIN, address, bank details at issue time
+
+  // ---- Money ----
+  currency     Currency     @default(INR)
+  /// FX rate frozen at issue date; INR-equivalents are computed with it.
+  fxRate       Decimal      @default(1) @db.Decimal(12, 6)
+  amountBasis  AmountBasis  @default(EXCLUSIVE)
+  taxTreatment TaxTreatment @default(INTRA_STATE)
+  sacCode      String?
+
+  /// Amount as typed into the quick-invoice modal, before interpretation.
+  enteredAmount Decimal @db.Decimal(14, 2)
+  subTotal      Decimal @default(0) @db.Decimal(14, 2) // taxable value
+  discount      Decimal @default(0) @db.Decimal(14, 2)
+  gstRate       Decimal @default(0) @db.Decimal(6, 3)
+  cgst          Decimal @default(0) @db.Decimal(14, 2)
+  sgst          Decimal @default(0) @db.Decimal(14, 2)
+  igst          Decimal @default(0) @db.Decimal(14, 2)
+  taxTotal      Decimal @default(0) @db.Decimal(14, 2)
+  roundOff      Decimal @default(0) @db.Decimal(14, 2)
+  total         Decimal @default(0) @db.Decimal(14, 2)
+
+  /// TDS the client deducts at source; expected receipt = total - tdsAmount.
+  tdsRate        Decimal @default(0) @db.Decimal(6, 3)
+  tdsAmount      Decimal @default(0) @db.Decimal(14, 2)
+  netReceivable  Decimal @default(0) @db.Decimal(14, 2)
+
+  amountPaid Decimal @default(0) @db.Decimal(14, 2)
+  balanceDue Decimal @default(0) @db.Decimal(14, 2)
+
+  status    InvoiceStatus @default(DRAFT)
+  issueDate DateTime      @default(now())
+  dueDate   DateTime
+  notes     String?
+  terms     String?
+
+  // ---- Linkage ----
+  sowId          String?
+  sow            Sow?          @relation(fields: [sowId], references: [id], onDelete: SetNull)
+  sowMilestoneId String?
+  sowMilestone   SowMilestone? @relation(fields: [sowMilestoneId], references: [id], onDelete: SetNull)
+  projectId      String?
+  project        Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  recurringId    String?
+  recurring      RecurringInvoice? @relation(fields: [recurringId], references: [id], onDelete: SetNull)
+
+  /// Credit notes reference the invoice they reverse.
+  creditsInvoiceId String?
+  creditsInvoice   Invoice?  @relation("CreditNotes", fields: [creditsInvoiceId], references: [id], onDelete: SetNull)
+  creditNotes      Invoice[] @relation("CreditNotes")
+
+  // ---- Dispatch & payment ----
+  pdfKey       String?
+  pdfGeneratedAt DateTime?
+  paymentLinkUrl       String?
+  paymentLinkProvider  String?
+  paymentLinkRef       String?
+  paymentLinkExpiresAt DateTime?
+
+  sentAt   DateTime?
+  viewedAt DateTime?
+  paidAt   DateTime?
+  /// Issued invoices are immutable; corrections go through a credit note.
+  isLocked Boolean   @default(false)
+  cancelledAt  DateTime?
+  cancelReason String?
+
+  createdById String?
+  createdBy   User?   @relation("InvoiceCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items      InvoiceItem[]
+  payments   Payment[]
+  shareLinks ShareLink[]
+  messages   OutboundMessage[]
+
+  @@index([clientId, status])
+  @@index([status, dueDate])
+  @@index([issueDate])
+  @@index([number])
+  @@index([status, issueDate])
+  @@index([fyLabel, seq])
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  sacCode     String?
+  quantity    Decimal @default(1) @db.Decimal(12, 3)
+  unitPrice   Decimal @db.Decimal(14, 2)
+  amount      Decimal @db.Decimal(14, 2)
+  gstRate     Decimal @default(18.000) @db.Decimal(6, 3)
+  position    Int     @default(0)
+
+  @@index([invoiceId])
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  invoiceId String
+  invoice   Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  clientId  String?
+  client    Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  amount   Decimal       @db.Decimal(14, 2)
+  currency Currency      @default(INR)
+  fxRate   Decimal       @default(1) @db.Decimal(12, 6)
+  method   PaymentMethod @default(RAZORPAY)
+  status   PaymentStatus @default(PENDING)
+
+  /// Gateway payment id. Unique so webhook replays cannot double-credit.
+  gatewayPaymentId String? @unique
+  gatewayOrderId   String?
+  gatewaySignature String?
+  reference        String?
+  notes            String?
+  /// TDS deducted by the client on this receipt.
+  tdsDeducted      Decimal @default(0) @db.Decimal(14, 2)
+
+  paidAt      DateTime?
+  recordedById String?
+  recordedBy   User?   @relation("PaymentRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([invoiceId, status])
+  @@index([clientId, paidAt])
+  @@index([status, paidAt])
+}
+
+/// Monthly retainer / recurring invoice schedule.
+model RecurringInvoice {
+  id       String @id @default(cuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  title    String
+  amount   Decimal            @db.Decimal(14, 2)
+  currency Currency           @default(INR)
+  interval RecurrenceInterval @default(MONTHLY)
+  /// Day of month (1-28) the invoice is generated on.
+  dayOfMonth Int              @default(1)
+  startDate DateTime
+  endDate   DateTime?
+  nextRunAt DateTime
+  lastRunAt DateTime?
+  /// When false, generated invoices wait in PENDING_APPROVAL instead of sending.
+  autoSend  Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  sacCode   String?
+  notes     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoices Invoice[]
+
+  @@index([isActive, nextRunAt])
+  @@index([clientId])
+}
+
+model Expense {
+  id       String          @id @default(cuid())
+  title    String
+  category ExpenseCategory @default(OTHER)
+  status   ExpenseStatus   @default(SUBMITTED)
+  amount   Decimal         @db.Decimal(14, 2)
+  currency Currency        @default(INR)
+  gstAmount Decimal        @default(0) @db.Decimal(14, 2)
+  /// Input tax credit claimable on this expense.
+  itcEligible Boolean      @default(false)
+  vendor      String?
+  expenseDate DateTime
+  notes       String?
+  receiptKey  String?
+
+  clientId  String?
+  client    Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  ownerId    String?
+  owner      User?     @relation("ExpenseOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  approverId String?
+  approver   User?     @relation("ExpenseApprover", fields: [approverId], references: [id], onDelete: SetNull)
+  approvedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, expenseDate])
+  @@index([status, expenseDate])
+  @@index([projectId])
+}
+
+// ============================================================
+// CREDENTIALS VAULT
+// ============================================================
+
+model Credential {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  category    String            @default("api_key")
+  environment String            @default("production")
+  username    String?
+  url         String?
+  sensitivity SecretSensitivity @default(STANDARD)
+
+  /// AES-256-GCM. Never leaves the server unencrypted; no API returns these fields.
+  secretCiphertext String
+  secretIv         String
+  secretAuthTag    String
+  /// Which master key version encrypted this, for rotation.
+  keyVersion       Int    @default(1)
+
+  clientId  String?
+  projectId String?
+  brandId   String?
+
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  rotatedAt  DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  accessLogs CredentialAccess[]
+
+  @@index([category, environment])
+  @@index([clientId])
+  @@index([projectId])
+}
+
+/// Every reveal and copy is logged — required by the spec.
+model CredentialAccess {
+  id           String     @id @default(cuid())
+  credentialId String
+  credential   Credential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action       String // "reveal" | "copy" | "update" | "create" | "delete"
+  ip           String?
+  userAgent    String?
+  sudoVerified Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+
+  @@index([credentialId, createdAt])
+  @@index([userId, createdAt])
+}
+
+// ============================================================
+// DIGITAL MARKETING
+// ============================================================
+
+model Brand {
+  id       String  @id @default(cuid())
+  name     String
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  logoUrl  String?
+  primaryColor String? @default("#4F46E5")
+  secondaryColor String? @default("#0EA5E9")
+  industry String?
+  website  String?
+  notes    String?
+
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaigns Campaign[]
+  creatives Creative[]
+
+  @@index([clientId])
+}
+
+model Campaign {
+  id       String         @id @default(cuid())
+  name     String
+  brandId  String
+  brand    Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  platform AdPlatform     @default(META)
+  status   CampaignStatus @default(DRAFT)
+  objective String?
+
+  budget   Decimal  @default(0) @db.Decimal(14, 2)
+  spend    Decimal  @default(0) @db.Decimal(14, 2)
+  revenue  Decimal  @default(0) @db.Decimal(14, 2)
+  currency Currency @default(INR)
+
+  impressions Int @default(0)
+  clicks      Int @default(0)
+  conversions Int @default(0)
+  leadsCount  Int @default(0)
+
+  startDate DateTime?
+  endDate   DateTime?
+  /// Platform campaign id when synced via Ads API.
+  externalId String?
+  lastSyncedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creatives Creative[]
+  leads     Lead[]
+
+  @@index([brandId, status])
+  @@index([platform, status])
+}
+
+model Creative {
+  id         String         @id @default(cuid())
+  name       String
+  brandId    String
+  brand      Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  campaignId String?
+  campaign   Campaign?      @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  platform   AdPlatform     @default(META)
+  format     String         @default("feed") // feed | story | reel | search | display
+  status     CreativeStatus @default(DRAFT)
+
+  headline    String?
+  primaryText String?
+  description String?
+  ctaLabel    String?  @default("Learn More")
+  destinationUrl String?
+  assetKey    String?
+  assetUrl    String?
+
+  reviewerId String?
+  reviewedAt DateTime?
+  reviewNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([brandId, status])
+  @@index([campaignId])
+}
+
+// ============================================================
+// MESSAGING, NOTIFICATIONS, WEBHOOKS
+// ============================================================
+
+/// Outbound email/WhatsApp with automatic retry and dead-lettering.
+model OutboundMessage {
+  id        String         @id @default(cuid())
+  channel   MessageChannel
+  status    MessageStatus  @default(QUEUED)
+  toAddress String
+  subject   String?
+  body      String?
+  templateName String?
+  templateVars Json?
+  attachments  Json?
+
+  invoiceId String?
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  entity    String?
+  entityId  String?
+
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  nextAttemptAt DateTime?
+  lastError   String?
+  providerMessageId String?
+  sentAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, nextAttemptAt])
+  @@index([invoiceId])
+  @@index([entity, entityId])
+}
+
+/// Idempotency ledger for gateway webhooks — a replayed event is a no-op.
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  provider    String // "razorpay" | "stripe" | "meta"
+  eventId     String
+  eventType   String
+  payload     Json
+  processedAt DateTime?
+  error       String?
+  createdAt   DateTime @default(now())
+
+  @@unique([provider, eventId])
+  @@index([provider, eventType])
+}
+
+model Notification {
+  id      String           @id @default(cuid())
+  userId  String
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type    NotificationType
+  title   String
+  body    String?
+  linkUrl String?
+  isRead  Boolean          @default(false)
+  readAt  DateTime?
+  metadata Json?
+  createdAt DateTime       @default(now())
+
+  @@index([userId, isRead, createdAt])
+  @@index([createdAt])
+}
