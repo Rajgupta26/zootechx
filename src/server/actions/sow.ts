@@ -9,7 +9,8 @@ import { generateToken, sha256 } from '@/lib/crypto';
 import { requirePermission, requestContext } from '@/lib/session';
 import { queueEmail } from '@/lib/jobs/outbound';
 import { sowSchema, sowSignSchema } from '@/lib/validators';
-import { parseSowText } from '@/lib/sow/parse';
+import { parseSowText, type ParsedSection } from '@/lib/sow/parse';
+import { renderAndStoreSignedSow } from '@/lib/sow/render-signed';
 import { Prisma } from '@prisma/client';
 import type { ActionResult } from './billing';
 
@@ -28,18 +29,36 @@ function nextNumber(count: number): string {
   return `SOW/${new Date().getFullYear()}/${String(count + 1).padStart(4, '0')}`;
 }
 
-/** Canonical string hashed at signing time. */
+/**
+ * Canonical string hashed at signing time.
+ *
+ * This must cover exactly what the signer was shown. A proposal created by
+ * pasting text keeps its content in `sections`, so hashing only the legacy
+ * scope fields would produce a proof of something the client never saw.
+ */
 function documentContent(sow: {
   number: string; title: string; scope: string;
   deliverables: string | null; assumptions: string | null;
   outOfScope: string | null; timeline: string | null;
   paymentTerms: string | null; value: { toString(): string }; currency: string;
+  sections?: unknown;
 }): string {
-  return [
-    sow.number, sow.title, sow.scope, sow.deliverables ?? '', sow.assumptions ?? '',
-    sow.outOfScope ?? '', sow.timeline ?? '', sow.paymentTerms ?? '',
-    `${sow.currency} ${sow.value.toString()}`,
-  ].join('\n---\n');
+  const parsed = sow.sections as ParsedSection[] | null | undefined;
+
+  const body = parsed?.length
+    ? parsed
+        .map((sec) => [
+          `${sec.number ?? ''} ${sec.title}`.trim(),
+          ...sec.body,
+          ...(sec.table?.rows.map((r) => r.join(' | ')) ?? []),
+        ].join('\n'))
+        .join('\n---\n')
+    : [
+        sow.scope, sow.deliverables ?? '', sow.assumptions ?? '',
+        sow.outOfScope ?? '', sow.timeline ?? '', sow.paymentTerms ?? '',
+      ].join('\n---\n');
+
+  return [sow.number, sow.title, body, `${sow.currency} ${sow.value.toString()}`].join('\n===\n');
 }
 
 export async function createSowAction(raw: unknown): Promise<ActionResult<{ id: string }>> {
@@ -298,10 +317,16 @@ export async function signSowAction(raw: unknown): Promise<ActionResult<{ number
       return updated;
     });
 
+    // Produce the fixed record of what was agreed. Deliberately outside the
+    // transaction: a rendering failure must not roll back a valid signature.
+    const signedPdfKey = await renderAndStoreSignedSow(sow.id);
+
     await notify({
       type: 'SOW_SIGNED',
       title: `${sow.number} signed`,
-      body: `${parsed.data.signerName} signed on behalf of ${link.sow.client.name}.`,
+      body:
+        `${parsed.data.signerName} signed on behalf of ${link.sow.client.name}.` +
+        (signedPdfKey ? ' The signed PDF is ready.' : ' The signed PDF could not be rendered — regenerate it from the proposal.'),
       linkUrl: `/sows/${sow.id}`,
       roles: ['SUPER_ADMIN', 'SUB_ADMIN'],
       alsoUserIds: sow.createdById ? [sow.createdById] : [],

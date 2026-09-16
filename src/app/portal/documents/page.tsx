@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { FileCheck2, FileText } from 'lucide-react';
+import { Download, FileCheck2, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { prisma } from '@/lib/db';
 import { requireAuth } from '@/lib/session';
 import { Card, CardContent } from '@/components/ui/card';
@@ -55,9 +56,17 @@ export default async function PortalDocuments() {
                       {sow.startDate ? ` · from ${formatDate(sow.startDate)}` : ''}
                     </p>
                   </div>
-                  <p className="shrink-0 font-semibold tabular">
-                    {formatMoney(sow.value.toString(), sow.currency)}
-                  </p>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <p className="font-semibold tabular">
+                      {formatMoney(sow.value.toString(), sow.currency)}
+                    </p>
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={`/api/sows/${sow.id}/pdf`} target="_blank" rel="noreferrer">
+                        <Download />
+                        PDF
+                      </a>
+                    </Button>
+                  </div>
                 </div>
 
                 <p className="line-clamp-3 whitespace-pre-line text-sm text-muted-foreground">

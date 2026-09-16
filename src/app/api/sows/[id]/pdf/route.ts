@@ -4,7 +4,8 @@ import { getCurrentUser } from '@/lib/session';
 import { can, scopeFilter } from '@/lib/rbac';
 import { renderSowPdf } from '@/lib/pdf/sow-pdf';
 import { getCompanyProfile } from '@/lib/billing/invoice-service';
-import type { ParsedSection } from '@/lib/sow/parse';
+import { sowSections } from '@/lib/sow/render-signed';
+import { getStorageProvider } from '@/lib/integrations/storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,20 +28,7 @@ export async function GET(
 
   const company = await getCompanyProfile();
 
-  // Proposals written before the paste feature have no parsed sections; fall
-  // back to the individual scope fields so they still render.
-  const stored = sow.sections as unknown as ParsedSection[] | null;
-  const sections: ParsedSection[] =
-    stored?.length
-      ? stored
-      : [
-          { number: 1, title: 'Scope of Work', body: sow.scope.split('\n') },
-          ...(sow.deliverables ? [{ number: 2, title: 'Deliverables', body: sow.deliverables.split('\n') }] : []),
-          ...(sow.timeline ? [{ number: 3, title: 'Timeline', body: sow.timeline.split('\n') }] : []),
-          ...(sow.assumptions ? [{ number: 4, title: 'Assumptions', body: sow.assumptions.split('\n') }] : []),
-          ...(sow.outOfScope ? [{ number: 5, title: 'Out of Scope', body: sow.outOfScope.split('\n') }] : []),
-          ...(sow.paymentTerms ? [{ number: 6, title: 'Payment Terms', body: sow.paymentTerms.split('\n') }] : []),
-        ].map((s) => ({ ...s, number: s.number ?? null }));
+  const sections = sowSections(sow);
 
   const buffer = await renderSowPdf({
     number: sow.number,
@@ -68,6 +56,19 @@ export async function GET(
         }
       : null,
   });
+
+  // Cache the countersigned copy the first time anyone downloads it. Signing
+  // already attempts this, but rendering there is best-effort so a failure
+  // cannot invalidate an accepted signature — this is the backstop.
+  if (sow.signature && !sow.signedPdfKey) {
+    const key = `proposals/${sow.createdAt.getFullYear()}/${sow.number.replace(/[^\w-]/g, '_')}-signed.pdf`;
+    try {
+      await getStorageProvider().put(key, buffer, 'application/pdf');
+      await prisma.sow.update({ where: { id: sow.id }, data: { signedPdfKey: key } });
+    } catch {
+      // A storage failure must not block the download.
+    }
+  }
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {

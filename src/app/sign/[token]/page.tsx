@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { AlertCircle, Ban, Clock, FileText } from 'lucide-react';
 import { resolveSowToken } from '@/server/actions/sow';
+import type { ParsedSection } from '@/lib/sow/parse';
 import { formatMoney } from '@/lib/billing/money';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { SignForm } from './sign-form';
@@ -50,6 +51,7 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
   }
 
   const { sow, expiresAt } = result;
+  const sections = (sow.sections as unknown as ParsedSection[] | null) ?? [];
   const signed = sow.status === 'SIGNED' && sow.signature;
 
   return (
@@ -96,12 +98,23 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
             </div>
           </div>
 
-          <Section title="Scope of work" body={sow.scope} />
-          {sow.deliverables && <Section title="Deliverables" body={sow.deliverables} />}
-          {sow.timeline && <Section title="Timeline" body={sow.timeline} />}
-          {sow.assumptions && <Section title="Assumptions" body={sow.assumptions} />}
-          {sow.outOfScope && <Section title="Out of scope" body={sow.outOfScope} />}
-          {sow.paymentTerms && <Section title="Payment terms" body={sow.paymentTerms} />}
+          {/* A pasted proposal keeps its content in `sections`. Rendering only
+              the legacy scope fields here would show the signer a fraction of
+              the document they are being asked to agree to. */}
+          {sections.length > 0 ? (
+            sections.map((section, i) => (
+              <ParsedSectionView key={i} section={section} currency={sow.currency} />
+            ))
+          ) : (
+            <>
+              <Section title="Scope of work" body={sow.scope} />
+              {sow.deliverables && <Section title="Deliverables" body={sow.deliverables} />}
+              {sow.timeline && <Section title="Timeline" body={sow.timeline} />}
+              {sow.assumptions && <Section title="Assumptions" body={sow.assumptions} />}
+              {sow.outOfScope && <Section title="Out of scope" body={sow.outOfScope} />}
+              {sow.paymentTerms && <Section title="Payment terms" body={sow.paymentTerms} />}
+            </>
+          )}
 
           {sow.milestones.length > 0 && (
             <section className="mt-6">
@@ -149,6 +162,60 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
         )}
       </div>
     </main>
+  );
+}
+
+function ParsedSectionView({
+  section,
+  currency,
+}: {
+  section: ParsedSection;
+  currency: string;
+}) {
+  return (
+    <section className="mt-6 first:mt-0">
+      <h2 className="mb-1.5 text-sm font-semibold">
+        {section.number ? `${section.number}. ` : ''}{section.title}
+      </h2>
+
+      {section.body.map((line, i) => {
+        if (!line) return null;
+        if (line.startsWith('\u2022 ')) {
+          return (
+            <p key={i} className="flex gap-2 pl-1 text-sm leading-relaxed text-muted-foreground">
+              <span aria-hidden>&bull;</span>
+              <span>{line.slice(2)}</span>
+            </p>
+          );
+        }
+        return (
+          <p key={i} className="text-sm leading-relaxed text-muted-foreground">
+            {line}
+          </p>
+        );
+      })}
+
+      {section.table && (
+        <div className="mt-2 overflow-x-auto scrollbar-thin rounded-lg border">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="px-3 py-2 font-medium">{section.table.columns[0]}</th>
+                <th className="px-3 py-2 text-right font-medium">{section.table.columns[1]}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {section.table.rows.map((row, r) => (
+                <tr key={r} className="border-t">
+                  <td className="px-3 py-2">{row[0]}</td>
+                  <td className="px-3 py-2 text-right font-medium tabular">{row[1]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
 

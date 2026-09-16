@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, FileCheck2, Link2, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Download, FileCheck2, Link2, ShieldCheck } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { requirePermission } from '@/lib/session';
 import { scopeFilter, can } from '@/lib/rbac';
@@ -65,6 +65,13 @@ export default async function SowDetail({ params }: { params: Promise<{ id: stri
             {formatMoney(sow.value.toString(), sow.currency)}
           </p>
         </div>
+
+        <Button variant="outline" asChild>
+          <a href={`/api/sows/${sow.id}/pdf`} target="_blank" rel="noreferrer">
+            <Download />
+            {sow.signature ? 'Signed PDF' : 'PDF'}
+          </a>
+        </Button>
 
         <SowActions
           sowId={sow.id}
