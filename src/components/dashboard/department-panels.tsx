@@ -14,7 +14,7 @@ import type { getDepartmentPanels } from '@/lib/queries/dashboard';
 type Data = Awaited<ReturnType<typeof getDepartmentPanels>>;
 
 /**
- * Per-person workload across the three delivery-facing departments.
+ * Per-person workload across the three client-facing departments.
  *
  * The admin dashboards otherwise show org-wide totals, which hide who is
  * actually carrying what. These panels answer "where does everything stand
@@ -32,7 +32,7 @@ export function DepartmentPanels({ data }: { data: Data }) {
 
       <div className="grid gap-4 xl:grid-cols-3">
         <SalesPanel data={data.sales} />
-        <DeliveryPanel data={data.delivery} />
+        <SoftwarePanel data={data.software} />
         <MarketingPanel data={data.marketing} />
       </div>
     </section>
@@ -82,16 +82,16 @@ function SalesPanel({ data }: { data: Data['sales'] }) {
   );
 }
 
-// ---------- Delivery ----------
+// ---------- Software ----------
 
-function DeliveryPanel({ data }: { data: Data['delivery'] }) {
+function SoftwarePanel({ data }: { data: Data['software'] }) {
   const totalProjects = new Set(data.rows.flatMap((r) => r.projectNames)).size;
   const totalIssues = data.rows.reduce((a, r) => a + r.openIssues, 0);
   const missingLogs = data.rows.filter((r) => !r.loggedToday).length;
 
   return (
     <Panel
-      title="Delivery"
+      title="Software"
       icon={FolderKanban}
       href="/projects"
       headline={`${totalProjects} active project${totalProjects === 1 ? '' : 's'}`}

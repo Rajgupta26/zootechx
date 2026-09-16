@@ -39,7 +39,7 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    heading: 'Delivery',
+    heading: 'Software',
     items: [
       { label: 'Projects', href: '/projects', icon: FolderKanban, permission: ['project', 'read'] },
       { label: 'Issues', href: '/issues', icon: Bug, permission: ['issue', 'read'] },

@@ -407,7 +407,7 @@ export async function getDepartmentPanels() {
 
   return {
     sales: { rows: salesRows, strayLeads },
-    delivery: { rows: devRows, unstaffedProjects },
+    software: { rows: devRows, unstaffedProjects },
     marketing: { rows: marketingRows },
   };
 }

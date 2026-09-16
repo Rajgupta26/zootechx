@@ -41,7 +41,7 @@ export default async function TasksPage() {
         title="Tasks"
         subtitle={
           user.role === 'SUPER_ADMIN' || user.role === 'SUB_ADMIN'
-            ? 'Cross-departmental work across sales, delivery and marketing.'
+            ? 'Cross-departmental work across sales, software and marketing.'
             : 'Work assigned to you.'
         }
       />
