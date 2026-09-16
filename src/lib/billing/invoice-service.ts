@@ -35,6 +35,8 @@ export interface QuickInvoiceInput {
   dueDate?: Date;
   notes?: string;
   terms?: string;
+  poNumber?: string;
+  paymentTermsLabel?: string;
   sowId?: string;
   sowMilestoneId?: string;
   projectId?: string;
@@ -212,6 +214,8 @@ export async function createQuickInvoice(
         dueDate,
         notes: input.notes ?? company.defaultNotes,
         terms: input.terms ?? company.defaultTerms,
+        poNumber: input.poNumber,
+        paymentTermsLabel: input.paymentTermsLabel ?? 'Due on Receipt',
 
         sowId: input.sowId,
         sowMilestoneId: input.sowMilestoneId,
@@ -577,6 +581,7 @@ function snapshotCompany(company: Awaited<ReturnType<typeof getCompanyProfile>>)
       ifsc: company.bankIfsc,
       swift: company.bankSwift,
       upi: company.upiId,
+      branch: company.bankBranch,
     },
   };
 }

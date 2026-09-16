@@ -9,6 +9,8 @@ import { generateToken, sha256 } from '@/lib/crypto';
 import { requirePermission, requestContext } from '@/lib/session';
 import { queueEmail } from '@/lib/jobs/outbound';
 import { sowSchema, sowSignSchema } from '@/lib/validators';
+import { parseSowText } from '@/lib/sow/parse';
+import { Prisma } from '@prisma/client';
 import type { ActionResult } from './billing';
 
 /**
@@ -307,6 +309,74 @@ export async function signSowAction(raw: unknown): Promise<ActionResult<{ number
 
     revalidatePath(`/sows/${sow.id}`);
     return { ok: true, data: { number: sow.number } };
+  } catch (err) {
+    return { ok: false, error: (err as Error).message };
+  }
+}
+
+
+/** Preview only — parse pasted text without saving anything. */
+export async function previewSowTextAction(text: string) {
+  await requirePermission('sow', 'create');
+  return parseSowText(text);
+}
+
+/**
+ * Create a proposal from pasted text.
+ *
+ * The text is parsed into sections, stored alongside the original paste so it
+ * can be re-parsed later, and rendered into the house template on demand.
+ */
+export async function createSowFromTextAction(input: {
+  clientId: string;
+  title?: string;
+  text: string;
+  value?: string;
+  currency?: 'INR' | 'USD';
+}): Promise<ActionResult<{ id: string; number: string; sections: number }>> {
+  try {
+    const user = await requirePermission('sow', 'create');
+    const parsed = parseSowText(input.text);
+
+    if (parsed.sections.length === 0) {
+      return {
+        ok: false,
+        error: 'No sections were found. Number your headings like "1. Introduction" and try again.',
+      };
+    }
+
+    const title = (input.title?.trim() || parsed.title || 'Untitled proposal').slice(0, 200);
+    const value = (input.value ?? parsed.detectedValue ?? '0').replace(/[,\s]/g, '');
+
+    // The scope column stays populated for the existing detail view and the
+    // client portal, which read it directly.
+    const scopeSection = parsed.sections.find((s) => /scope|introduction/i.test(s.title));
+    const scope = (scopeSection?.body.join('\n') || parsed.sections[0].body.join('\n') || title).slice(0, 8000);
+
+    const count = await prisma.sow.count();
+    const sow = await prisma.sow.create({
+      data: {
+        number: nextNumber(count),
+        title,
+        clientId: input.clientId,
+        scope,
+        sections: parsed.sections as unknown as Prisma.InputJsonValue,
+        sourceText: input.text,
+        currency: input.currency ?? 'INR',
+        value,
+        createdById: user.id,
+      },
+    });
+
+    await audit({
+      actorId: user.id, actorEmail: user.email, actorRole: user.role,
+      action: 'sow.create', entity: 'sow', entityId: sow.id,
+      summary: `Created ${sow.number} from pasted text — ${parsed.sections.length} sections, ${title}`,
+      metadata: { sections: parsed.sections.length, detectedValue: parsed.detectedValue },
+    });
+
+    revalidatePath('/sows');
+    return { ok: true, data: { id: sow.id, number: sow.number, sections: parsed.sections.length } };
   } catch (err) {
     return { ok: false, error: (err as Error).message };
   }

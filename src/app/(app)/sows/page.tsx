@@ -12,6 +12,9 @@ import {
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Pagination } from '@/components/ui/pagination';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import Link2 from 'next/link';
 import { formatMoney } from '@/lib/billing/money';
 import { formatDate, paginate, pageCount } from '@/lib/utils';
 
@@ -47,6 +50,14 @@ export default async function SowsPage({
       <PageHeader
         title="Proposals"
         subtitle="Scope and price, sent to the client to sign. Links expire after 30 days and can be cancelled."
+        action={
+          <Button asChild>
+            <Link2 href="/sows/new">
+              <Plus />
+              New proposal
+            </Link2>
+          </Button>
+        }
       />
 
       <Card>

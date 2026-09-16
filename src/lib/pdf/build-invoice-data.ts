@@ -28,6 +28,8 @@ export function buildInvoicePdfData(
     taxTreatment: invoice.taxTreatment as TaxTreatment,
     placeOfSupply: invoice.placeOfSupply,
     sacCode: invoice.sacCode,
+    poNumber: invoice.poNumber,
+    paymentTermsLabel: invoice.paymentTermsLabel,
 
     company: {
       legalName: snapshot.legalName ?? 'Company',

@@ -411,6 +411,7 @@ model CompanyProfile {
   bankAccountNumber String?
   bankIfsc          String?
   bankSwift         String?
+  bankBranch        String?
   upiId             String?
 
   // Billing defaults used by the 2-field quick-invoice engine
@@ -624,6 +625,10 @@ model Sow {
 
   status    SowStatus @default(DRAFT)
   scope     String // markdown
+  /// Parsed sections from pasted text, in document order. Shape: ParsedSection[]
+  sections  Json?
+  /// The original pasted text, kept so a proposal can be re-parsed later.
+  sourceText String?
   deliverables String?
   assumptions  String?
   outOfScope   String?
@@ -932,6 +937,10 @@ model Invoice {
   dueDate   DateTime
   notes     String?
   terms     String?
+  /// Client's purchase order reference, printed on the invoice.
+  poNumber  String?
+  /// Free-text payment terms shown on the invoice, e.g. "Due on Receipt".
+  paymentTermsLabel String?
 
   // ---- Linkage ----
   sowId          String?
