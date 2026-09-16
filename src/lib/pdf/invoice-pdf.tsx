@@ -1,44 +1,33 @@
 import React from 'react';
-import path from 'node:path';
 import {
-  Document, Page, Text, View, Image, StyleSheet, Svg, Path, renderToBuffer,
+  Document, Page, Text, View, Image, StyleSheet, renderToBuffer,
 } from '@react-pdf/renderer';
 import { amountInWords, formatAmount, toMinor } from '@/lib/billing/money';
-import { treatmentLabel, type TaxTreatment } from '@/lib/billing/gst';
+import { type TaxTreatment } from '@/lib/billing/gst';
+import { CONTENT, Letterhead, SIGNATURE } from './letterhead';
 
 /**
  * ZootechX invoice.
  *
  * Reproduces the bordered-table layout the business already uses, printed on
- * the company letterhead: logo top-left, the wave motif top-right, and the
- * Tardeo address footer.
+ * the company letterhead (see ./letterhead). The table is placed at the same
+ * position on the page as the sample invoice: 31pt in, 139pt down.
  *
  * The GST rows are conditional. An Indian supply must legally show the CGST +
  * SGST or IGST split, so those rows appear; a zero-rated export shows no tax
  * rows at all, which is what the original AED sample does.
  */
 
-const LOGO = path.join(process.cwd(), 'public', 'brand', 'logo.png');
-
 const BORDER = '#000000';
 
 const s = StyleSheet.create({
   page: {
-    paddingTop: 28, paddingBottom: 74, paddingHorizontal: 34,
+    paddingTop: CONTENT.top, paddingBottom: CONTENT.bottom, paddingHorizontal: CONTENT.side,
     fontSize: 8.5, fontFamily: 'Helvetica', color: '#000000',
   },
 
-  // --- letterhead ---
-  logo: { width: 150 },
-  wave: { position: 'absolute', top: 0, right: 0 },
-  footer: {
-    position: 'absolute', bottom: 24, left: 34, right: 34,
-    borderTopWidth: 2, borderTopColor: BORDER, paddingTop: 6,
-    fontSize: 8, textAlign: 'center', color: '#1a1a1a',
-  },
-
   // --- outer table ---
-  table: { borderWidth: 1, borderColor: BORDER, marginTop: 16 },
+  table: { borderWidth: 1, borderColor: BORDER },
   row: { flexDirection: 'row' },
 
   titleCell: {
@@ -75,7 +64,8 @@ const s = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: BORDER,
   },
   payLeft: { flex: 1, padding: 5, borderRightWidth: 1, borderRightColor: BORDER },
-  payRight: { width: 166, padding: 5, alignItems: 'center', justifyContent: 'space-between' },
+  payRight: { width: 166, padding: 5, alignItems: 'center' },
+  signature: { width: 60, height: 48, marginTop: 4 },
   payRow: { flexDirection: 'row', marginBottom: 1.5 },
   payLabel: { width: 74 },
   bold: { fontFamily: 'Helvetica-Bold' },
@@ -139,21 +129,6 @@ const fmtDate = (d: Date) =>
 
 const positive = (v: string) => Number(v) > 0.0001;
 
-/** The wave motif from the letterhead, drawn as concentric strokes. */
-function Wave() {
-  const lines = Array.from({ length: 22 }, (_, i) => {
-    const o = i * 3.1;
-    return `M ${150 + o * 0.35} 0 C ${120 + o} ${28 + o * 0.5}, ${92 + o} ${52 + o * 0.5}, ${8 + o * 0.9} ${64 + o * 0.7}`;
-  });
-  return (
-    <Svg style={s.wave} width={190} height={104} viewBox="0 0 190 104">
-      {lines.map((d, i) => (
-        <Path key={i} d={d} stroke="#2b2b2b" strokeWidth={0.45} fill="none" />
-      ))}
-    </Svg>
-  );
-}
-
 export function InvoiceDocument({ data }: { data: InvoicePdfData }) {
   const sym = data.currency === 'INR' ? 'Rs.' : '$';
   const isIntra = data.taxTreatment === 'INTRA_STATE';
@@ -165,8 +140,7 @@ export function InvoiceDocument({ data }: { data: InvoicePdfData }) {
   return (
     <Document title={`${TITLES[data.kind]} ${data.number}`} author={data.company.legalName}>
       <Page size="A4" style={s.page}>
-        <Wave />
-        <Image src={LOGO} style={s.logo} />
+        <Letterhead company={data.company} />
 
         <View style={s.table}>
           {/* Title */}
@@ -277,7 +251,8 @@ export function InvoiceDocument({ data }: { data: InvoicePdfData }) {
               <Text style={[s.bold, { fontSize: 10 }]}>
                 {data.company.tradeName || data.company.legalName}
               </Text>
-              <Text style={[s.bold, { marginTop: 34 }]}>Authorised Signatory</Text>
+              <Image src={SIGNATURE} style={s.signature} />
+              <Text style={s.bold}>Authorised Signatory</Text>
             </View>
           </View>
         </View>
@@ -293,11 +268,6 @@ export function InvoiceDocument({ data }: { data: InvoicePdfData }) {
         {data.paymentLinkUrl && data.kind !== 'CREDIT_NOTE' ? (
           <Text style={s.note}>Pay online: {data.paymentLinkUrl}</Text>
         ) : null}
-
-        <View style={s.footer} fixed>
-          <Text>{data.company.address.replace(/\n/g, ', ')}</Text>
-          <Text>{data.company.phone} | {data.company.email}</Text>
-        </View>
       </Page>
     </Document>
   );

@@ -1,38 +1,34 @@
 import React from 'react';
-import path from 'node:path';
 import {
-  Document, Page, Text, View, Image, StyleSheet, Svg, Path, renderToBuffer,
+  Document, Page, Text, View, StyleSheet, renderToBuffer,
 } from '@react-pdf/renderer';
 import type { ParsedSection } from '@/lib/sow/parse';
+import { CONTENT, Letterhead } from './letterhead';
 
 /**
  * ZootechX proposal document.
  *
- * Renders parsed sections onto the company letterhead in the house format:
- * numbered headings, bulleted bodies, two-column tables for pricing, and a
- * client/provider sign-off block at the end.
+ * Renders parsed sections onto the company letterhead (see ./letterhead) in
+ * the house format: numbered headings, bulleted bodies, two-column tables for
+ * pricing, and a client/provider sign-off block at the end. The stationery —
+ * logo, wave, watermark and footer — repeats on every page.
  *
  * No page numbers: a `fixed` Text using the dynamic `render` prop makes the
  * layout engine emit impossible coordinates once the document spans pages
  * ("unsupported number: -1.9e+21"). The footer is fixed and static instead.
  */
 
-const LOGO = path.join(process.cwd(), 'public', 'brand', 'logo.png');
-
 const s = StyleSheet.create({
   page: {
-    paddingTop: 30, paddingBottom: 66, paddingHorizontal: 42,
+    paddingTop: CONTENT.top, paddingBottom: CONTENT.bottom, paddingHorizontal: CONTENT.side,
     fontSize: 9.5, fontFamily: 'Helvetica', color: '#111111', lineHeight: 1.5,
   },
-  logo: { width: 132, marginBottom: 14 },
-  wave: { position: 'absolute', top: 0, right: 0 },
 
   docTitle: { fontSize: 16, fontFamily: 'Helvetica-Bold', marginBottom: 2 },
   docSub: { fontSize: 10, color: '#444444', marginBottom: 4 },
   metaLine: { fontSize: 8.5, color: '#666666', marginBottom: 14 },
   rule: { borderBottomWidth: 1.5, borderBottomColor: '#111111', marginBottom: 16 },
 
-  // minPresenceAhead keeps a heading from stranding at the foot of a page.
   h2: { fontSize: 11.5, fontFamily: 'Helvetica-Bold', marginTop: 14, marginBottom: 5 },
   para: { marginBottom: 3, textAlign: 'justify' },
   bullet: { flexDirection: 'row', marginBottom: 2.5, paddingLeft: 6 },
@@ -54,11 +50,6 @@ const s = StyleSheet.create({
   signField: { marginBottom: 12, fontSize: 9 },
   signLine: { borderBottomWidth: 0.75, borderBottomColor: '#555555', marginTop: 12 },
 
-  footer: {
-    position: 'absolute', bottom: 22, left: 42, right: 42,
-    borderTopWidth: 1.5, borderTopColor: '#111111', paddingTop: 5,
-    fontSize: 7.5, textAlign: 'center', color: '#333333',
-  },
 });
 
 export interface SowPdfData {
@@ -79,20 +70,6 @@ export interface SowPdfData {
   signature?: { signerName: string; signedAt: Date; ipAddress: string } | null;
 }
 
-function Wave() {
-  const lines = Array.from({ length: 20 }, (_, i) => {
-    const o = i * 3.2;
-    return `M ${150 + o * 0.35} 0 C ${120 + o} ${26 + o * 0.5}, ${90 + o} ${48 + o * 0.5}, ${8 + o * 0.9} ${60 + o * 0.7}`;
-  });
-  return (
-    <Svg style={s.wave} width={176} height={96} viewBox="0 0 176 96">
-      {lines.map((d, i) => (
-        <Path key={i} d={d} stroke="#2b2b2b" strokeWidth={0.42} fill="none" />
-      ))}
-    </Svg>
-  );
-}
-
 const fmtDate = (d: Date) =>
   d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
@@ -102,8 +79,7 @@ export function SowDocument({ data }: { data: SowPdfData }) {
   return (
     <Document title={`${data.number} — ${data.title}`} author={data.company.legalName}>
       <Page size="A4" style={s.page}>
-        <Wave />
-        <Image src={LOGO} style={s.logo} />
+        <Letterhead company={data.company} />
 
         <Text style={s.docTitle}>Statement of Work (SOW)</Text>
         <Text style={s.docSub}>{data.title}</Text>
@@ -112,9 +88,18 @@ export function SowDocument({ data }: { data: SowPdfData }) {
         </Text>
         <View style={s.rule} />
 
+        {/*
+          * Sections are fragments, not Views, so every heading and paragraph is
+          * a direct sibling in the page flow. react-pdf refuses to break before
+          * the first child of a container — breaking there cannot improve its
+          * presence — so a heading wrapped in a section View strands at the foot
+          * of the page with its body overleaf. Flattened, minPresenceAhead does
+          * what it says: reserve room for the heading plus its first few lines,
+          * or move the heading to the next page.
+          */}
         {data.sections.map((section, i) => (
-          <View key={i}>
-            <Text style={s.h2} minPresenceAhead={40}>
+          <React.Fragment key={i}>
+            <Text style={s.h2} minPresenceAhead={46}>
               {section.number ? `${section.number}. ` : ''}{section.title}
             </Text>
 
@@ -145,7 +130,7 @@ export function SowDocument({ data }: { data: SowPdfData }) {
                 ))}
               </View>
             )}
-          </View>
+          </React.Fragment>
         ))}
 
         {/* Sign-off */}
@@ -177,11 +162,6 @@ export function SowDocument({ data }: { data: SowPdfData }) {
             {fmtDate(data.signature.signedAt)} from IP {data.signature.ipAddress}.
           </Text>
         )}
-
-        <View style={s.footer} fixed>
-          <Text>{data.company.address.replace(/\n/g, ', ')}</Text>
-          <Text>{data.company.phone} | {data.company.email}</Text>
-        </View>
       </Page>
     </Document>
   );
