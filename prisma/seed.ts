@@ -62,8 +62,6 @@ async function main() {
     prisma.sowSignature.deleteMany(),
     prisma.sowMilestone.deleteMany(),
     prisma.sow.deleteMany(),
-    prisma.quotationItem.deleteMany(),
-    prisma.quotation.deleteMany(),
     prisma.followUp.deleteMany(),
     prisma.activity.deleteMany(),
     prisma.lead.deleteMany(),

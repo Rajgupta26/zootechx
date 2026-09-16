@@ -13,7 +13,7 @@ import type { Role } from '@prisma/client';
  */
 
 export const RESOURCES = [
-  'dashboard', 'lead', 'client', 'followup', 'quotation', 'sow', 'project',
+  'dashboard', 'lead', 'client', 'followup', 'sow', 'project',
   'milestone', 'progresslog', 'issue', 'task', 'invoice', 'payment', 'expense',
   'credential', 'brand', 'campaign', 'creative', 'user', 'audit', 'settings',
   'portal', 'notification', 'report',
@@ -37,7 +37,6 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'lead:read', 'lead:create', 'lead:update', 'lead:delete', 'lead:assign',
     'client:read', 'client:create', 'client:update', 'client:delete',
     'followup:read', 'followup:create', 'followup:update', 'followup:delete', 'followup:assign',
-    'quotation:read', 'quotation:create', 'quotation:update', 'quotation:send',
     'sow:read', 'sow:create', 'sow:update', 'sow:send', 'sow:approve',
     'project:read', 'project:create', 'project:update',
     'milestone:read', 'milestone:create', 'milestone:update', 'milestone:approve',
@@ -58,7 +57,6 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'lead:read', 'lead:create', 'lead:update', 'lead:delete',
     'client:read', 'client:create', 'client:update',
     'followup:read', 'followup:create', 'followup:update',
-    'quotation:read', 'quotation:create', 'quotation:update', 'quotation:send',
     'sow:read', 'sow:create', 'sow:update', 'sow:send',
     'invoice:read', 'invoice:create', 'invoice:send',
     'payment:read',

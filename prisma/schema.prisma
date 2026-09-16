@@ -87,14 +87,6 @@ enum FollowUpStatus {
   CANCELLED
 }
 
-enum QuotationStatus {
-  DRAFT
-  SENT
-  ACCEPTED
-  REJECTED
-  EXPIRED
-}
-
 enum SowStatus {
   DRAFT
   SENT
@@ -311,7 +303,6 @@ model User {
   createdLeads     Lead[]             @relation("LeadCreator")
   accountManaged   Client[]           @relation("AccountManager")
   followUps        FollowUp[]         @relation("FollowUpAssignee")
-  quotations       Quotation[]
   sows             Sow[]
   projectsLed      Project[]          @relation("ProjectLead")
   projectMembers   ProjectMember[]
@@ -499,7 +490,6 @@ model Lead {
 
   followUps  FollowUp[]
   activities Activity[]
-  quotations Quotation[]
 
   @@unique([externalId])
   @@index([status, ownerId])
@@ -549,7 +539,6 @@ model Client {
   contacts    ClientContact[]
   fromLead    Lead?         @relation("LeadConversion")
   followUps   FollowUp[]
-  quotations  Quotation[]
   sows        Sow[]
   projects    Project[]
   invoices    Invoice[]
@@ -623,56 +612,8 @@ model Activity {
 }
 
 // ============================================================
-// QUOTATIONS & SOW
+// STATEMENTS OF WORK
 // ============================================================
-
-model Quotation {
-  id       String          @id @default(cuid())
-  number   String          @unique
-  leadId   String?
-  lead     Lead?           @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  clientId String?
-  client   Client?         @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  title    String
-  status   QuotationStatus @default(DRAFT)
-  currency Currency        @default(INR)
-
-  subTotal   Decimal  @default(0) @db.Decimal(14, 2)
-  discount   Decimal  @default(0) @db.Decimal(14, 2)
-  taxRate    Decimal  @default(18.000) @db.Decimal(6, 3)
-  taxAmount  Decimal  @default(0) @db.Decimal(14, 2)
-  total      Decimal  @default(0) @db.Decimal(14, 2)
-
-  validUntil DateTime?
-  notes      String?
-  terms      String?
-
-  createdById String?
-  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  items QuotationItem[]
-  sows  Sow[]
-
-  @@index([status, createdAt])
-  @@index([clientId])
-}
-
-model QuotationItem {
-  id          String  @id @default(cuid())
-  quotationId String
-  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
-  description String
-  sacCode     String?
-  quantity    Decimal @default(1) @db.Decimal(12, 3)
-  unitPrice   Decimal @db.Decimal(14, 2)
-  amount      Decimal @db.Decimal(14, 2)
-  position    Int     @default(0)
-
-  @@index([quotationId])
-}
 
 model Sow {
   id       String    @id @default(cuid())
@@ -680,8 +621,6 @@ model Sow {
   title    String
   clientId String
   client   Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  quotationId String?
-  quotation   Quotation? @relation(fields: [quotationId], references: [id], onDelete: SetNull)
 
   status    SowStatus @default(DRAFT)
   scope     String // markdown

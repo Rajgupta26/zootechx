@@ -122,7 +122,6 @@ export const followUpSchema = z.object({
 export const sowSchema = z.object({
   title: z.string().min(3).max(200),
   clientId: z.string().min(1, 'Client is required'),
-  quotationId: z.string().optional(),
   scope: z.string().min(10, 'Describe the scope'),
   deliverables: z.string().optional(),
   assumptions: z.string().optional(),

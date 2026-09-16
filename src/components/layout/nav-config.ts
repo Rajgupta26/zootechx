@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Users, Building2, PhoneCall, FileText, ScrollText,
+  LayoutDashboard, Users, Building2, PhoneCall, ScrollText,
   FolderKanban, ListChecks, Receipt, Wallet, CreditCard, KeyRound,
   Megaphone, Palette, UserCog, ScrollIcon, Settings, Bug, ClipboardList,
   TrendingUp, type LucideIcon,
@@ -35,7 +35,6 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: 'Leads', href: '/leads', icon: Users, permission: ['lead', 'read'] },
       { label: 'Follow-ups', href: '/follow-ups', icon: PhoneCall, permission: ['followup', 'read'] },
       { label: 'Clients', href: '/clients', icon: Building2, permission: ['client', 'read'] },
-      { label: 'Quotations', href: '/quotations', icon: FileText, permission: ['quotation', 'read'] },
       { label: 'SOWs', href: '/sows', icon: ScrollText, permission: ['sow', 'read'] },
     ],
   },

@@ -55,7 +55,6 @@ export async function createSowAction(raw: unknown): Promise<ActionResult<{ id: 
         number: nextNumber(count),
         title: parsed.data.title,
         clientId: parsed.data.clientId,
-        quotationId: parsed.data.quotationId,
         scope: parsed.data.scope,
         deliverables: parsed.data.deliverables,
         assumptions: parsed.data.assumptions,

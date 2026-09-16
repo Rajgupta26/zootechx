@@ -15,7 +15,7 @@ const VARIANTS: Record<string, BadgeProps['variant']> = {
   NEW: 'default', CONTACTED: 'secondary', QUALIFIED: 'default',
   PROPOSAL_SENT: 'warning', NEGOTIATION: 'warning', WON: 'success',
   LOST: 'destructive', DORMANT: 'muted',
-  // SOW / Quotation
+  // SOW
   VIEWED: 'secondary', SIGNED: 'success', ACCEPTED: 'success',
   REJECTED: 'destructive', EXPIRED: 'muted', REVOKED: 'destructive',
   // Project / Milestone

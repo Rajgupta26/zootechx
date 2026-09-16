@@ -29,7 +29,6 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
       convertedClient: { select: { id: true, name: true } },
       followUps: { orderBy: { dueAt: 'desc' }, include: { assignee: { select: { name: true } } } },
       activities: { orderBy: { createdAt: 'desc' }, take: 20 },
-      quotations: { select: { id: true, number: true, total: true, currency: true, status: true } },
     },
   });
 
@@ -199,21 +198,6 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
             </CardContent>
           </Card>
 
-          {lead.quotations.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Quotations</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 pt-0">
-                {lead.quotations.map((q) => (
-                  <div key={q.id} className="flex items-center justify-between rounded-md border p-2.5 text-sm">
-                    <span className="font-medium">{q.number}</span>
-                    <span className="tabular">{formatMoney(q.total.toString(), q.currency)}</span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </>
