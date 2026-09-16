@@ -3,8 +3,8 @@ import { requireAuth } from '@/lib/session';
 import { PageHeader } from '@/components/layout/app-shell';
 import { DASHBOARD_TITLES } from '@/components/layout/nav-config';
 import {
-  getAdminDashboard, getSalesDashboard,
-  getDeveloperDashboard, getMarketingDashboard,
+  getAdminDashboard, getSalesDashboard, getDeveloperDashboard,
+  getMarketingDashboard, getDepartmentPanels,
 } from '@/lib/queries/dashboard';
 import { AdminDashboard } from './admin-dashboard';
 import { SalesDashboard } from './sales-dashboard';
@@ -25,7 +25,11 @@ export default async function DashboardPage() {
     <>
       <PageHeader title={copy.title} subtitle={copy.subtitle} />
       {(user.role === 'SUPER_ADMIN' || user.role === 'SUB_ADMIN') && (
-        <AdminDashboard data={await getAdminDashboard()} role={user.role} />
+        <AdminDashboard
+          data={await getAdminDashboard()}
+          departments={await getDepartmentPanels()}
+          role={user.role}
+        />
       )}
       {user.role === 'SALES' && <SalesDashboard data={await getSalesDashboard(user)} />}
       {user.role === 'DEVELOPER' && <DeveloperDashboard data={await getDeveloperDashboard(user)} />}

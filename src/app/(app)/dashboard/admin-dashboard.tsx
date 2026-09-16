@@ -5,16 +5,26 @@ import {
 } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { RevenueChart } from '@/components/dashboard/revenue-chart';
+import { DepartmentPanels } from '@/components/dashboard/department-panels';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { formatMoney } from '@/lib/billing/money';
 import { formatDate } from '@/lib/utils';
-import type { getAdminDashboard } from '@/lib/queries/dashboard';
+import type { getAdminDashboard, getDepartmentPanels } from '@/lib/queries/dashboard';
 
 type Data = Awaited<ReturnType<typeof getAdminDashboard>>;
+type Departments = Awaited<ReturnType<typeof getDepartmentPanels>>;
 
-export function AdminDashboard({ data, role }: { data: Data; role: string }) {
+export function AdminDashboard({
+  data,
+  departments,
+  role,
+}: {
+  data: Data;
+  departments: Departments;
+  role: string;
+}) {
   const collectionRate =
     data.invoicedFy > 0 ? (data.collectedFy / data.invoicedFy) * 100 : 0;
 
@@ -146,6 +156,8 @@ export function AdminDashboard({ data, role }: { data: Data; role: string }) {
           </CardContent>
         </Card>
       </div>
+
+      <DepartmentPanels data={departments} />
     </div>
   );
 }
