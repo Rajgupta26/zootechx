@@ -26,29 +26,29 @@ echo "AUTH_SECRET=$(openssl rand -base64 32)"; echo "VAULT_MASTER_KEY=$(openssl 
 
 ### Database
 
-**Option A — embedded, nothing to install.** In its own terminal:
+**Option A — bundled PostgreSQL, nothing to install.** In its own terminal:
 
 ```bash
 npm run db:local
 ```
 
-That starts PGlite (Postgres compiled to WebAssembly) on port 5432 behind a real
-wire-protocol socket, so Prisma treats it as ordinary Postgres. Use this
-`DATABASE_URL`:
+That runs a real PostgreSQL server from prebuilt binaries — no Homebrew, Docker
+or admin rights needed. It behaves like any other Postgres, so the dev server,
+`db:seed` and `db:studio` can all run at the same time. Data lives in `.pgdata`
+and survives restarts. Leave it running; `Ctrl+C` shuts it down cleanly.
+
+The default `DATABASE_URL` already points at it:
 
 ```
-postgresql://postgres:postgres@127.0.0.1:5432/postgres?connection_limit=1&pgbouncer=true
+postgresql://postgres:postgres@127.0.0.1:5432/postgres
 ```
 
-Both parameters are required. PGlite serves **one connection at a time**
-(`connection_limit=1`), and its socket server does not scope prepared statements
-per session (`pgbouncer=true` tells Prisma not to use them). The single
-connection also means you cannot run `db:seed`, `db:studio` or any other script
-while `npm run dev` is running — stop the dev server first. It is a development
-convenience, not a production database.
+If a previous run was killed rather than stopped, clear the cluster and start
+again with `rm -rf .pgdata`.
 
-**Option B — a real PostgreSQL 14+.** Point `DATABASE_URL` at it and skip
-`db:local` entirely. Do this before deploying.
+**Option B — your own PostgreSQL 14+.** Point `DATABASE_URL` at it and skip
+`db:local`. Do this before deploying: the bundled server is a development
+convenience, not a managed database.
 
 ### Then
 

@@ -1,42 +1,52 @@
 /**
- * Embedded Postgres for local development.
+ * Local PostgreSQL for development.
  *
- * PGlite is Postgres compiled to WebAssembly; the socket server puts it behind
- * a real TCP port speaking the Postgres wire protocol, so Prisma connects with
- * an ordinary postgresql:// URL and neither Prisma nor the app knows the
- * difference.
+ * Runs a real PostgreSQL server from prebuilt binaries — no Homebrew, Docker or
+ * admin rights required. It behaves like any other Postgres: multiple
+ * concurrent connections, so the dev server, `db:seed` and `db:studio` can all
+ * run at the same time.
  *
- * This is a convenience for getting started with zero system installs — it is
- * NOT for production. Two URL parameters are required:
- *   connection_limit=1  PGlite serves one connection at a time.
- *   pgbouncer=true      Disables prepared statements, which PGlite's socket
- *                       server does not scope per session (otherwise Prisma
- *                       fails with 'prepared statement "s0" already exists').
- * Point DATABASE_URL at a real Postgres before deploying.
+ * Data lives in ./.pgdata and survives restarts. This is a development
+ * convenience; point DATABASE_URL at a managed Postgres before deploying.
  *
  *   npm run db:local
  */
 
-import { PGlite } from '@electric-sql/pglite';
-import { PGLiteSocketServer } from '@electric-sql/pglite-socket';
+import EmbeddedPostgres from 'embedded-postgres';
+import fs from 'node:fs';
 import path from 'node:path';
 
-const PORT = Number(process.env.PGLITE_PORT ?? 5432);
-const DATA_DIR = path.join(process.cwd(), '.pglite');
+const PORT = Number(process.env.PGDEV_PORT ?? 5432);
+const DATA_DIR = path.join(process.cwd(), '.pgdata');
+const URL = `postgresql://postgres:postgres@127.0.0.1:${PORT}/postgres`;
 
 async function main() {
-  console.log('Starting embedded Postgres (PGlite)…');
+  const firstRun = !fs.existsSync(DATA_DIR);
 
-  const db = await PGlite.create({ dataDir: DATA_DIR });
-  const server = new PGLiteSocketServer({ db, port: PORT, host: '127.0.0.1' });
+  const pg = new EmbeddedPostgres({
+    databaseDir: DATA_DIR,
+    user: 'postgres',
+    password: 'postgres',
+    port: PORT,
+    persistent: true,
+    // Postgres is chatty on stdout; only surface real problems.
+    onLog: (msg: string) => {
+      if (/FATAL|PANIC|could not|failed/i.test(msg)) process.stderr.write(msg);
+    },
+  });
 
-  await server.start();
+  if (firstRun) {
+    console.log('First run — initialising the cluster (one time, ~10s)…');
+    await pg.initialise();
+  }
+
+  await pg.start();
 
   console.log(`
-  Embedded Postgres is listening on 127.0.0.1:${PORT}
+  PostgreSQL is listening on 127.0.0.1:${PORT}
   Data directory: ${DATA_DIR}
 
-  DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:${PORT}/postgres?connection_limit=1&pgbouncer=true"
+  DATABASE_URL="${URL}"
 
   Leave this running. In another terminal:
     npm run db:migrate
@@ -46,18 +56,31 @@ async function main() {
   Press Ctrl+C to stop.
 `);
 
-  const shutdown = async () => {
-    console.log('\nStopping embedded Postgres…');
-    await server.stop();
-    await db.close();
+  let stopping = false;
+  const shutdown = async (signal: string) => {
+    if (stopping) return;
+    stopping = true;
+    console.log(`\nReceived ${signal} — stopping PostgreSQL…`);
+    try {
+      await pg.stop();
+      console.log('Stopped cleanly.');
+    } catch (err) {
+      console.error('Shutdown error:', (err as Error).message);
+    }
     process.exit(0);
   };
 
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', () => void shutdown('SIGINT'));
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+  // Without this the process exits as soon as start() resolves.
+  await new Promise(() => {});
 }
 
 main().catch((err) => {
-  console.error('Failed to start embedded Postgres:', err);
+  console.error('\nFailed to start PostgreSQL:', err);
+  console.error(
+    '\nIf a previous run did not shut down cleanly, remove the data directory ' +
+      'and try again:\n  rm -rf .pgdata\n'
+  );
   process.exit(1);
 });
