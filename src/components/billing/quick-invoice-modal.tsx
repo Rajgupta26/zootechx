@@ -40,6 +40,7 @@ interface Preview {
   subTotal: string; cgst: string; sgst: string; igst: string;
   taxTotal: string; roundOff: string; total: string;
   tdsRate: number; tdsAmount: string; netReceivable: string;
+  applyTds: boolean;
   clientLabel: string; placeOfSupply: string | null;
   nextNumber: string; dueDate: string; currency: 'INR' | 'USD';
 }
@@ -90,7 +91,9 @@ export function QuickInvoiceModal({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [basis, setBasis] = useState<'EXCLUSIVE' | 'INCLUSIVE'>('EXCLUSIVE');
   const [description, setDescription] = useState('');
-  const [applyTds, setApplyTds] = useState(false);
+  // undefined = inherit the client's TDS setting; a boolean is an explicit
+  // override for this invoice only.
+  const [applyTds, setApplyTds] = useState<boolean | undefined>(undefined);
 
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [clientQuery, setClientQuery] = useState('');
@@ -116,7 +119,7 @@ export function QuickInvoiceModal({
     setCreated(null);
     setResult(null);
     setShowAdvanced(false);
-    setApplyTds(false);
+    setApplyTds(undefined);
     setBasis('EXCLUSIVE');
   }, [defaultClientId]);
 
@@ -166,6 +169,9 @@ export function QuickInvoiceModal({
   }, [amount, clientId, clientName, basis, applyTds]);
 
   const selectedClient = clients.find((c) => c.id === clientId);
+  // What will actually happen: the explicit override if the user set one,
+  // otherwise whatever the server resolved from the client's configuration.
+  const effectiveTds = applyTds ?? preview?.applyTds ?? false;
   const displayClient = selectedClient?.name || clientName;
   const currency = (preview?.currency ?? selectedClient?.currency ?? 'INR') as 'INR' | 'USD';
   const canContinue = Boolean(preview && (clientId || clientName.trim()) && Number(amount.replace(/[,\s]/g, '')) > 0);
@@ -395,12 +401,16 @@ export function QuickInvoiceModal({
                       placeholder="Professional services"
                     />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
                       <Label htmlFor="qi-tds">Client deducts TDS</Label>
-                      <p className="text-xs text-muted-foreground">10% u/s 194J on the taxable value</p>
+                      <p className="text-xs text-muted-foreground">
+                        {preview && applyTds === undefined && preview.applyTds
+                          ? `${preview.tdsRate}% u/s 194J — from this client's settings`
+                          : 'Deducted u/s 194J on the taxable value, not the total'}
+                      </p>
                     </div>
-                    <Switch id="qi-tds" checked={applyTds} onCheckedChange={setApplyTds} />
+                    <Switch id="qi-tds" checked={effectiveTds} onCheckedChange={setApplyTds} />
                   </div>
                 </div>
               )}

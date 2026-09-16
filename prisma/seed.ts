@@ -9,11 +9,13 @@
  * dispatch paths as production.
  */
 
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'node:crypto';
-
-const prisma = new PrismaClient();
+// Reuse the application's Prisma singleton. The seed calls into the real
+// billing service, which uses this same client — creating a second one here
+// would open a second connection pool and split transaction boundaries.
+import { prisma } from '../src/lib/db';
 
 const PASSWORD = 'password123';
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000);

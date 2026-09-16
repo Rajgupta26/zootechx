@@ -11,14 +11,11 @@ Tailwind CSS and Radix primitives.
 
 ## Quick start
 
-You need **Node 20+** and a **PostgreSQL 14+** database.
+You need **Node 20+**. A PostgreSQL server is optional — an embedded one is
+included for getting started.
 
 ```bash
-npm install
-```
-
-```bash
-cp .env.example .env
+npm install && cp .env.example .env
 ```
 
 Generate the two secrets `.env` needs:
@@ -27,7 +24,33 @@ Generate the two secrets `.env` needs:
 echo "AUTH_SECRET=$(openssl rand -base64 32)"; echo "VAULT_MASTER_KEY=$(openssl rand -base64 32)"
 ```
 
-Point `DATABASE_URL` at your database, then:
+### Database
+
+**Option A — embedded, nothing to install.** In its own terminal:
+
+```bash
+npm run db:local
+```
+
+That starts PGlite (Postgres compiled to WebAssembly) on port 5432 behind a real
+wire-protocol socket, so Prisma treats it as ordinary Postgres. Use this
+`DATABASE_URL`:
+
+```
+postgresql://postgres:postgres@127.0.0.1:5432/postgres?connection_limit=1&pgbouncer=true
+```
+
+Both parameters are required. PGlite serves **one connection at a time**
+(`connection_limit=1`), and its socket server does not scope prepared statements
+per session (`pgbouncer=true` tells Prisma not to use them). The single
+connection also means you cannot run `db:seed`, `db:studio` or any other script
+while `npm run dev` is running — stop the dev server first. It is a development
+convenience, not a production database.
+
+**Option B — a real PostgreSQL 14+.** Point `DATABASE_URL` at it and skip
+`db:local` entirely. Do this before deploying.
+
+### Then
 
 ```bash
 npm run db:migrate && npm run db:seed && npm run dev

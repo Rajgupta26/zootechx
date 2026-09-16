@@ -19,7 +19,9 @@ export const quickInvoiceSchema = z.object({
   description: z.string().max(500).optional(),
   gstRate: z.coerce.number().min(0).max(100).optional(),
   discount: z.string().optional(),
-  applyTds: z.boolean().default(false),
+  /// Left undefined so the client's own TDS setting applies; an explicit
+  /// true/false from the modal overrides it for this one invoice.
+  applyTds: z.boolean().optional(),
   dueDate: z.string().optional(),
   notes: z.string().max(2000).optional(),
   sowId: z.string().optional(),

@@ -6,7 +6,8 @@
  * zero-rated export.
  */
 
-import type { PrismaClient, Client, User } from '@prisma/client';
+import type { Client, User } from '@prisma/client';
+import type { prisma as PrismaSingleton } from '../src/lib/db';
 import { Prisma } from '@prisma/client';
 import { createQuickInvoice, applyPayment } from '../src/lib/billing/invoice-service';
 import { encryptSecret } from '../src/lib/crypto';
@@ -21,7 +22,7 @@ interface Ctx {
   northwind: Client; vertex: Client; meridian: Client;
 }
 
-export async function seedDelivery(prisma: PrismaClient, ctx: Ctx) {
+export async function seedDelivery(prisma: typeof PrismaSingleton, ctx: Ctx) {
   const { superAdmin, subAdmin, sales, dev, dev2, marketing, northwind, vertex, meridian } = ctx;
 
   // ---------- SOWs ----------

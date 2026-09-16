@@ -24,8 +24,39 @@ export interface AuditInput {
   userAgent?: string | null;
 }
 
+/**
+ * Order-independent serialisation that matches what actually gets persisted.
+ *
+ * Two things would otherwise make a correct chain read as broken:
+ *
+ *  1. Postgres JSONB does not preserve an object's key order — it normalises
+ *     it. So `JSON.stringify` produces one string on the way in and a different
+ *     one on the way back out. Keys are therefore sorted recursively.
+ *
+ *  2. A property whose value is `undefined` is dropped by `JSON.stringify`, so
+ *     it never reaches the database at all. Hashing it as `null` would describe
+ *     a field that was never stored. Undefined properties are omitted, exactly
+ *     as JSON serialisation omits them.
+ */
+function stableStringify(value: unknown): string {
+  if (value === null || value === undefined) return 'null';
+  if (typeof value !== 'object') return JSON.stringify(value) ?? 'null';
+
+  // Inside an array, undefined serialises as null — that is JSON's own rule,
+  // and it is what Postgres ends up holding.
+  if (Array.isArray(value)) {
+    return `[${value.map((v) => (v === undefined ? 'null' : stableStringify(v))).join(',')}]`;
+  }
+
+  const record = value as Record<string, unknown>;
+  const keys = Object.keys(record)
+    .filter((k) => record[k] !== undefined)
+    .sort();
+  return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(record[k])}`).join(',')}}`;
+}
+
 function canonical(entry: AuditInput & { createdAt: string; prevHash: string | null }): string {
-  return JSON.stringify({
+  return stableStringify({
     actorId: entry.actorId ?? null,
     actorEmail: entry.actorEmail ?? null,
     action: entry.action,

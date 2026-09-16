@@ -55,6 +55,8 @@ export interface InvoicePreview {
   subTotal: string; cgst: string; sgst: string; igst: string;
   taxTotal: string; roundOff: string; total: string;
   tdsRate: number; tdsAmount: string; netReceivable: string;
+  /// The resolved TDS decision — client setting unless the caller overrode it.
+  applyTds: boolean;
   clientLabel: string; placeOfSupply: string | null;
   nextNumber: string; dueDate: string; currency: 'INR' | 'USD';
 }
@@ -116,6 +118,7 @@ export async function previewQuickInvoice(input: {
         tdsRate: tax.tdsRate,
         tdsAmount: toDecimalString(tax.tdsAmount),
         netReceivable: toDecimalString(tax.netReceivable),
+        applyTds,
         clientLabel: client?.name ?? input.clientName ?? '',
         placeOfSupply: client?.stateName ?? null,
         nextNumber: await peekNextInvoiceNumber(prisma, {

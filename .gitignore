@@ -11,3 +11,6 @@ npm-debug.log*
 next-env.d.ts
 /storage
 /coverage
+
+# Embedded dev database (PGlite) and locally generated files
+.pglite

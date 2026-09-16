@@ -1,5 +1,13 @@
 # Deployment
 
+## The embedded dev database is not for production
+
+`npm run db:local` runs PGlite, which is Postgres compiled to WebAssembly. It is
+excellent for a zero-install start and wrong for production: one connection at a
+time, no replication, no backups, and the whole database is a folder in the
+working directory. Point `DATABASE_URL` at a real PostgreSQL server before you
+deploy, and delete the `.pglite` directory.
+
 ## Before you go live
 
 ```bash
