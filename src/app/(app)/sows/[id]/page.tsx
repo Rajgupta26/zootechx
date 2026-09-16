@@ -13,7 +13,7 @@ import { formatMoney } from '@/lib/billing/money';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { SowActions } from './sow-actions';
 
-export const metadata: Metadata = { title: 'Statement of work' };
+export const metadata: Metadata = { title: 'Proposal' };
 
 export default async function SowDetail({ params }: { params: Promise<{ id: string }> }) {
   const user = await requirePermission('sow', 'read');
@@ -46,7 +46,7 @@ export default async function SowDetail({ params }: { params: Promise<{ id: stri
       <Button variant="ghost" size="sm" className="-ml-2 mb-3" asChild>
         <Link href="/sows">
           <ArrowLeft />
-          Statements of work
+          Proposals
         </Link>
       </Button>
 
@@ -147,7 +147,7 @@ export default async function SowDetail({ params }: { params: Promise<{ id: stri
           ) : (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Awaiting signature</CardTitle>
+                <CardTitle className="text-base">Not signed yet</CardTitle>
               </CardHeader>
               <CardContent className="pt-0 text-sm text-muted-foreground">
                 Share a signing link with the client to capture their e-signature.

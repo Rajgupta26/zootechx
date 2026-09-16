@@ -174,7 +174,7 @@ function MarketingPanel({ data }: { data: Data['marketing'] }) {
             />
             <Metric
               icon={TrendingUp}
-              label={`${person.roas.toFixed(2)}× ROAS`}
+              label={`${person.roas.toFixed(2)}× return`}
               tone={person.roas >= 2 ? 'ok' : person.roas >= 1 ? 'warn' : 'danger'}
             />
             {person.leads > 0 && <Badge variant="secondary">{person.leads} leads synced</Badge>}

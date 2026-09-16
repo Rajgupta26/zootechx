@@ -100,7 +100,7 @@ export function SettingsForm({ company }: { company: CompanyForm }) {
           <Field label="Address line 2" value={form.addressLine2} onChange={(v) => set('addressLine2', v)} />
           <Field label="City" value={form.city} onChange={(v) => set('city', v)} />
           <div className="space-y-1.5">
-            <Label>State (place of supply)</Label>
+            <Label>Your state</Label>
             <Select value={form.stateCode} onValueChange={(v) => set('stateCode', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -112,7 +112,8 @@ export function SettingsForm({ company }: { company: CompanyForm }) {
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Compared against each client&apos;s state to choose CGST+SGST or IGST.
+              Decides the tax split: a client in the same state is charged CGST + SGST,
+              a client in another state is charged IGST.
             </p>
             {err('stateCode') && <p className="text-xs text-destructive">{err('stateCode')}</p>}
           </div>
@@ -128,12 +129,12 @@ export function SettingsForm({ company }: { company: CompanyForm }) {
         <CardContent className="space-y-4 pt-0">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Field
-              label="Default GST rate (%)"
+              label="GST rate (%)"
               value={String(form.defaultGstRate)}
               onChange={(v) => set('defaultGstRate', Number(v) || 0)}
               type="number"
             />
-            <Field label="Default SAC code" value={form.defaultSacCode} onChange={(v) => set('defaultSacCode', v)} hint="998314 = IT design & development" />
+            <Field label="Service code (SAC)" value={form.defaultSacCode} onChange={(v) => set('defaultSacCode', v)} hint="998314 = IT design & development" />
             <Field label="Invoice prefix" value={form.invoicePrefix} onChange={(v) => set('invoicePrefix', v.toUpperCase())} hint="e.g. XCC/26-27/0001" />
             <Field
               label="Payment terms (days)"
@@ -170,11 +171,11 @@ export function SettingsForm({ company }: { company: CompanyForm }) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
-              label="Default TDS rate (%)"
+              label="TDS rate (%)"
               value={String(form.defaultTdsRate)}
               onChange={(v) => set('defaultTdsRate', Number(v) || 0)}
               type="number"
-              hint="Section 194J — computed on the taxable value, not the GST-inclusive total."
+              hint="Tax the client withholds and pays to the government for you. Calculated before GST is added."
             />
             <Toggle
               label="Apply TDS by default"

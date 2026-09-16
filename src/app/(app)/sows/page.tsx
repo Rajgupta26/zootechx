@@ -15,7 +15,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { formatMoney } from '@/lib/billing/money';
 import { formatDate, paginate, pageCount } from '@/lib/utils';
 
-export const metadata: Metadata = { title: 'Statements of work' };
+export const metadata: Metadata = { title: 'Proposals' };
 
 export default async function SowsPage({
   searchParams,
@@ -45,8 +45,8 @@ export default async function SowsPage({
   return (
     <>
       <PageHeader
-        title="Statements of work"
-        subtitle="Scope, milestones and e-signatures. Public links expire after 30 days and can be revoked."
+        title="Proposals"
+        subtitle="Scope and price, sent to the client to sign. Links expire after 30 days and can be cancelled."
       />
 
       <Card>
@@ -54,8 +54,8 @@ export default async function SowsPage({
           {sows.length === 0 ? (
             <EmptyState
               icon={ScrollText}
-              title="No statements of work"
-              description="Draft a SOW to define scope and capture a client signature."
+              title="No proposals yet"
+              description="Write up what you will do and what it costs, then send it for signature."
             />
           ) : (
             <>

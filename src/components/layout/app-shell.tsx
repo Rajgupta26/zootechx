@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { Sidebar } from './sidebar';
+import { SectionTabs } from './section-tabs';
 import { GlobalSearch } from './global-search';
 import { NotificationBell } from './notification-bell';
 import { UserMenu } from './user-menu';
@@ -78,7 +79,10 @@ export function AppShell({
         </header>
 
         <main className={cn('flex-1 overflow-y-auto scrollbar-thin bg-background')}>
-          <div className="mx-auto w-full max-w-[1600px] p-4 sm:p-6">{children}</div>
+          <div className="mx-auto w-full max-w-[1600px] p-4 sm:p-6">
+            <SectionTabs role={user.role} grants={user.grants} />
+            {children}
+          </div>
         </main>
       </div>
     </div>

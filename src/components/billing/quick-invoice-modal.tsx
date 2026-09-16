@@ -335,7 +335,7 @@ export function QuickInvoiceModal({
                         <Badge variant="outline">{TREATMENT_COPY[preview.treatment] ?? preview.treatment}</Badge>
                         {preview.placeOfSupply && (
                           <span className="text-xs text-muted-foreground">
-                            Place of supply: {preview.placeOfSupply}
+                            Client&apos;s state: {preview.placeOfSupply}
                           </span>
                         )}
                       </div>

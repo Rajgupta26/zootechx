@@ -1,78 +1,125 @@
 import {
-  LayoutDashboard, Users, Building2, PhoneCall, ScrollText,
-  FolderKanban, ListChecks, Receipt, Wallet, CreditCard, KeyRound,
-  Megaphone, Palette, UserCog, ScrollIcon, Settings, Bug, ClipboardList,
-  TrendingUp, type LucideIcon,
+  Bug, Building2, ClipboardList, CreditCard, FolderKanban, KeyRound,
+  LayoutDashboard, ListChecks, Megaphone, Palette, PhoneCall, Receipt,
+  ScrollIcon, ScrollText, Settings, TrendingUp, UserCog, Users, Wallet,
+  type LucideIcon,
 } from 'lucide-react';
 import type { Resource, Action } from '@/lib/rbac';
 
 /**
- * Navigation is derived from the same permission matrix the server enforces,
- * so a link can never appear for a page the user would be blocked from.
+ * Navigation.
+ *
+ * Grouped rather than flat: nineteen sidebar entries meant users had to
+ * remember which of six headings held the page they wanted. Now there are
+ * seven doors, and the pages inside a group appear as tabs once you are in it.
+ *
+ * Every route keeps its original URL — the grouping is presentation only, so
+ * existing links and bookmarks still work.
  */
-export interface NavItem {
+
+export interface NavChild {
   label: string;
   href: string;
   icon: LucideIcon;
   permission: [Resource, Action];
+  /** Shown under the tab strip to explain what this page is for. */
+  hint?: string;
 }
 
-export interface NavSection {
-  heading: string;
-  items: NavItem[];
+export interface NavGroup {
+  label: string;
+  icon: LucideIcon;
+  /** Pages inside the group. A group with one child renders no tab strip. */
+  children: NavChild[];
 }
 
-export const NAV_SECTIONS: NavSection[] = [
+export const NAV_GROUPS: NavGroup[] = [
   {
-    heading: 'Overview',
-    items: [
+    label: 'Dashboard',
+    icon: LayoutDashboard,
+    children: [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, permission: ['dashboard', 'read'] },
     ],
   },
   {
-    heading: 'Sales',
-    items: [
-      { label: 'Leads', href: '/leads', icon: Users, permission: ['lead', 'read'] },
-      { label: 'Follow-ups', href: '/follow-ups', icon: PhoneCall, permission: ['followup', 'read'] },
-      { label: 'Clients', href: '/clients', icon: Building2, permission: ['client', 'read'] },
-      { label: 'SOWs', href: '/sows', icon: ScrollText, permission: ['sow', 'read'] },
+    label: 'Sales',
+    icon: Users,
+    children: [
+      { label: 'Leads', href: '/leads', icon: Users, permission: ['lead', 'read'],
+        hint: 'People who might buy from you' },
+      { label: 'Follow-ups', href: '/follow-ups', icon: PhoneCall, permission: ['followup', 'read'],
+        hint: 'Calls and emails you owe someone' },
+      { label: 'Clients', href: '/clients', icon: Building2, permission: ['client', 'read'],
+        hint: 'Companies you invoice' },
+      { label: 'Proposals', href: '/sows', icon: ScrollText, permission: ['sow', 'read'],
+        hint: 'Scope and price, sent for signature' },
     ],
   },
   {
-    heading: 'Software',
-    items: [
-      { label: 'Projects', href: '/projects', icon: FolderKanban, permission: ['project', 'read'] },
-      { label: 'Issues', href: '/issues', icon: Bug, permission: ['issue', 'read'] },
-      { label: 'Progress logs', href: '/progress-logs', icon: ClipboardList, permission: ['progresslog', 'read'] },
-      { label: 'Tasks', href: '/tasks', icon: ListChecks, permission: ['task', 'read'] },
+    label: 'Software',
+    icon: FolderKanban,
+    children: [
+      { label: 'Projects', href: '/projects', icon: FolderKanban, permission: ['project', 'read'],
+        hint: 'Work you are building for clients' },
+      { label: 'Issues', href: '/issues', icon: Bug, permission: ['issue', 'read'],
+        hint: 'Bugs and defects to fix' },
+      { label: 'Daily logs', href: '/progress-logs', icon: ClipboardList, permission: ['progresslog', 'read'],
+        hint: 'What each person did today' },
     ],
   },
   {
-    heading: 'Finance',
-    items: [
-      { label: 'Invoices', href: '/invoices', icon: Receipt, permission: ['invoice', 'read'] },
-      { label: 'Payments', href: '/payments', icon: CreditCard, permission: ['payment', 'read'] },
-      { label: 'Expenses', href: '/expenses', icon: Wallet, permission: ['expense', 'read'] },
+    label: 'Money',
+    icon: Receipt,
+    children: [
+      { label: 'Invoices', href: '/invoices', icon: Receipt, permission: ['invoice', 'read'],
+        hint: 'What you have billed' },
+      { label: 'Payments', href: '/payments', icon: CreditCard, permission: ['payment', 'read'],
+        hint: 'What has actually come in' },
+      { label: 'Expenses', href: '/expenses', icon: Wallet, permission: ['expense', 'read'],
+        hint: 'What you have spent' },
     ],
   },
   {
-    heading: 'Marketing',
-    items: [
-      { label: 'Brands', href: '/marketing/brands', icon: Palette, permission: ['brand', 'read'] },
-      { label: 'Campaigns', href: '/marketing/campaigns', icon: Megaphone, permission: ['campaign', 'read'] },
-      { label: 'Ad studio', href: '/marketing/studio', icon: TrendingUp, permission: ['creative', 'read'] },
+    label: 'Marketing',
+    icon: Megaphone,
+    children: [
+      { label: 'Campaigns', href: '/marketing/campaigns', icon: Megaphone, permission: ['campaign', 'read'],
+        hint: 'Ads running, and what they cost' },
+      { label: 'Brands', href: '/marketing/brands', icon: Palette, permission: ['brand', 'read'],
+        hint: 'Who you run campaigns for' },
+      { label: 'Ad studio', href: '/marketing/studio', icon: TrendingUp, permission: ['creative', 'read'],
+        hint: 'Write an ad and preview it' },
     ],
   },
   {
-    heading: 'Administration',
-    items: [
-      { label: 'Vault', href: '/vault', icon: KeyRound, permission: ['credential', 'read'] },
-      { label: 'Team', href: '/team', icon: UserCog, permission: ['user', 'read'] },
-      { label: 'Audit log', href: '/audit', icon: ScrollIcon, permission: ['audit', 'read'] },
-      { label: 'Settings', href: '/settings', icon: Settings, permission: ['settings', 'read'] },
+    label: 'My tasks',
+    icon: ListChecks,
+    children: [
+      { label: 'My tasks', href: '/tasks', icon: ListChecks, permission: ['task', 'read'] },
+    ],
+  },
+  {
+    label: 'Admin',
+    icon: Settings,
+    children: [
+      { label: 'Team', href: '/team', icon: UserCog, permission: ['user', 'read'],
+        hint: 'Who can sign in, and what they can see' },
+      { label: 'Passwords', href: '/vault', icon: KeyRound, permission: ['credential', 'read'],
+        hint: 'Shared logins and keys, encrypted' },
+      { label: 'Activity log', href: '/audit', icon: ScrollIcon, permission: ['audit', 'read'],
+        hint: 'Every change, and who made it' },
+      { label: 'Settings', href: '/settings', icon: Settings, permission: ['settings', 'read'],
+        hint: 'Company details and invoice defaults' },
     ],
   },
 ];
+
+/** The group that owns a path, for highlighting and for the tab strip. */
+export function findGroupForPath(pathname: string): NavGroup | undefined {
+  return NAV_GROUPS.find((g) =>
+    g.children.some((c) => pathname === c.href || pathname.startsWith(`${c.href}/`))
+  );
+}
 
 /** Role-specific dashboard titles, matching the spec's named workspaces. */
 export const DASHBOARD_TITLES: Record<string, { title: string; subtitle: string }> = {

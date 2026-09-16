@@ -136,7 +136,7 @@ export default async function ClientDetail({ params }: { params: Promise<{ id: s
           {client.sows.length > 0 && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Statements of work</CardTitle>
+                <CardTitle className="text-base">Proposals</CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
                 <ul className="divide-y">
@@ -171,7 +171,7 @@ export default async function ClientDetail({ params }: { params: Promise<{ id: s
             <CardContent className="space-y-3 pt-0 text-sm">
               <Row icon={Mail} label="Email">{client.email || '—'}</Row>
               {client.phone && <Row icon={Phone} label="Phone">{client.phone}</Row>}
-              <Row icon={MapPin} label="Place of supply">
+              <Row icon={MapPin} label="State">
                 {client.country !== 'India'
                   ? `${client.country} (export)`
                   : (client.stateName ?? 'Not set')}

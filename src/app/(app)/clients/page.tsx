@@ -79,7 +79,7 @@ export default async function ClientsPage({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Client</TableHead>
-                    <TableHead>Place of supply</TableHead>
+                    <TableHead>State</TableHead>
                     <TableHead>GSTIN</TableHead>
                     <TableHead>Account manager</TableHead>
                     <TableHead className="text-right">Projects</TableHead>
@@ -99,7 +99,7 @@ export default async function ClientsPage({
                           </Link>
                           <p className="truncate text-xs text-muted-foreground">{c.email}</p>
                         </TableCell>
-                        <TableCell data-label="Place of supply">
+                        <TableCell data-label="State">
                           {c.country !== 'India' ? (
                             <Badge variant="warning">{c.country} · export</Badge>
                           ) : (
