@@ -182,25 +182,25 @@ async function main() {
   // ---------- Users ----------
   console.log('   Users (6 roles)…');
   const superAdmin = await prisma.user.create({
-    data: { name: 'Arjun Mehta', email: 'admin@xcc.test', passwordHash: hash, role: 'SUPER_ADMIN', phone: '+91 98111 00001', department: 'Leadership' },
+    data: { name: 'Binoli Shah', email: 'admin@xcc.test', passwordHash: hash, role: 'SUPER_ADMIN', phone: '+91 98111 00001', department: 'Leadership' },
   });
   const subAdmin = await prisma.user.create({
-    data: { name: 'Neha Kapoor', email: 'ops@xcc.test', passwordHash: hash, role: 'SUB_ADMIN', phone: '+91 98111 00002', department: 'Operations' },
+    data: { name: 'Aryan', email: 'ops@xcc.test', passwordHash: hash, role: 'SUB_ADMIN', phone: '+91 98111 00002', department: 'Operations' },
   });
   const sales = await prisma.user.create({
-    data: { name: 'Rohan Iyer', email: 'sales@xcc.test', passwordHash: hash, role: 'SALES', phone: '+91 98111 00003', department: 'Sales' },
+    data: { name: 'Rohit', email: 'sales@xcc.test', passwordHash: hash, role: 'SALES', phone: '+91 98111 00003', department: 'Sales' },
   });
   const sales2 = await prisma.user.create({
     data: { name: 'Divya Nair', email: 'sales2@xcc.test', passwordHash: hash, role: 'SALES', phone: '+91 98111 00006', department: 'Sales' },
   });
   const dev = await prisma.user.create({
-    data: { name: 'Karan Sethi', email: 'dev@xcc.test', passwordHash: hash, role: 'DEVELOPER', phone: '+91 98111 00004', department: 'Engineering' },
+    data: { name: 'Raj Gupta', email: 'dev@xcc.test', passwordHash: hash, role: 'DEVELOPER', phone: '+91 98111 00004', department: 'Engineering' },
   });
   const dev2 = await prisma.user.create({
     data: { name: 'Ananya Rao', email: 'dev2@xcc.test', passwordHash: hash, role: 'DEVELOPER', phone: '+91 98111 00007', department: 'Engineering' },
   });
   const marketing = await prisma.user.create({
-    data: { name: 'Sanya Verma', email: 'marketing@xcc.test', passwordHash: hash, role: 'MARKETING', phone: '+91 98111 00005', department: 'Marketing' },
+    data: { name: 'Vishit', email: 'marketing@xcc.test', passwordHash: hash, role: 'MARKETING', phone: '+91 98111 00005', department: 'Marketing' },
   });
   const clientUser = await prisma.user.create({
     data: {
