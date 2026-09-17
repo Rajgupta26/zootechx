@@ -24,7 +24,7 @@ export default function LoginPage() {
           <h1 className="display text-[2.1rem]">
             Leads to invoices, without the paperwork in between
           </h1>
-          <p className="mt-4 text-primary-foreground/80">
+          <p className="mt-4 text-primary-foreground/85">
             Pipeline, delivery and marketing in one place — plus GST-correct billing
             that takes a client and an amount and does the rest.
           </p>

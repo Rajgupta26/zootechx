@@ -75,7 +75,7 @@ export function LoginBackdrop() {
         whole panel — so the glow still reads on the right. These figures are
         measured, not picked: composited against every fourth frame of the
         loop, the brightest pixel that ever passes behind the headline leaves
-        6.7:1, and 5.6:1 for the paragraph at 80% opacity.
+        5.3:1, and 4.7:1 for the paragraph at 85% opacity.
       */}
       <div className="absolute inset-0 bg-gradient-to-r from-primary/85 via-primary/60 to-primary/15" />
       <div className="absolute inset-0 bg-gradient-to-t from-primary/75 via-transparent to-primary/25" />
