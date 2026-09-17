@@ -16,10 +16,10 @@ import type { Role } from '@prisma/client';
  * only its permitted pages are listed — so nobody can navigate their way into
  * a permission error.
  *
- * The group holding the current page is open by default. Toggling one
- * overrides that default for the rest of the session, which is why the state
- * is a sparse record rather than a set: an absent entry means "not decided",
- * not "closed".
+ * Every group starts open, so the whole map is visible without clicking
+ * anything. Closing one overrides that default for the rest of the session,
+ * which is why the state is a sparse record rather than a set: an absent entry
+ * means "not decided", not "closed".
  */
 export function Sidebar({
   role,
@@ -43,8 +43,6 @@ export function Sidebar({
       can(actor, child.permission[0] as Resource, child.permission[1] as Action)
     ),
   })).filter((group) => group.children.length > 0);
-
-  const openLabel = groups.find((g) => g.children.some((c) => onPage(c.href)))?.label;
 
   return (
     <aside
@@ -90,7 +88,7 @@ export function Sidebar({
               );
             }
 
-            const open = toggled[group.label] ?? group.label === openLabel;
+            const open = toggled[group.label] ?? true;
 
             return (
               <li key={group.label}>
