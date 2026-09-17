@@ -31,10 +31,23 @@ In the Neon dashboard the pooled string is the default; untick *Connection
 pooling* to see the direct one. Both arrive with `?sslmode=require` on them —
 leave it.
 
-Put both in `.env` (or your host's secrets manager). Never paste them into
-chat or commit them: they contain the password.
+Easiest way to set both:
 
-Then check what you are pointed at before you touch it:
+```bash
+npm run connect:neon
+```
+
+Paste the pooled string once, at a prompt with the echo off. It drops
+`channel_binding=require` (Prisma enforces it, and it fails with an
+authentication error that names nothing useful), derives the direct URL,
+**connects on both before writing anything**, and keeps a copy of the old
+`.env`. If the derived direct hostname does not resolve, it asks you for that
+string too rather than guessing.
+
+To do it by hand instead: put both in `.env` yourself. Never paste them into
+chat or commit them — they contain the password.
+
+Then:
 
 ```bash
 npm run db:check       # reads only — host, SSL, pooling, migrations, row counts

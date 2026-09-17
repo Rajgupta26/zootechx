@@ -4,6 +4,8 @@ out
 build
 .env
 .env*.local
+# Backups written by scripts/connect-neon.ts — they hold the database password.
+.env.*.bak
 *.pem
 npm-debug.log*
 .DS_Store
