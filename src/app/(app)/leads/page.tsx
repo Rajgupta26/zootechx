@@ -28,7 +28,7 @@ const STATUSES: LeadStatus[] = [
 export default async function LeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; q?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; q?: string; new?: string }>;
 }) {
   const user = await requirePermission('lead', 'read');
   const params = await searchParams;
@@ -78,7 +78,11 @@ export default async function LeadsPage({
             ? 'Your pipeline. Duplicate email or phone numbers are caught on creation.'
             : 'Every lead across the team, with owner and stage.'
         }
-        action={can(user, 'lead', 'create') ? <NewLeadDialog owners={owners} /> : undefined}
+        action={
+          can(user, 'lead', 'create')
+            ? <NewLeadDialog owners={owners} autoOpen={params.new === '1'} />
+            : undefined
+        }
       />
 
       <Card>

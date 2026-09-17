@@ -10,7 +10,7 @@ import { CapsuleChart } from '@/components/dashboard/capsule-chart';
 import { BatteryStat } from '@/components/dashboard/battery-stat';
 import { DepartmentPanels } from '@/components/dashboard/department-panels';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { QuickInvoiceButton } from '@/components/billing/quick-invoice-modal';
+import { QuickActions } from '@/components/layout/quick-actions';
 import { formatMoney } from '@/lib/billing/money';
 import { formatDate, cn } from '@/lib/utils';
 import type { getAdminDashboard, getDepartmentPanels } from '@/lib/queries/dashboard';
@@ -34,10 +34,12 @@ export function AdminDashboard({
   data,
   departments,
   role,
+  grants,
 }: {
   data: Data;
   departments: Departments;
   role: string;
+  grants?: string[];
 }) {
   const [view, setView] = useState<View>('Money');
 
@@ -46,7 +48,7 @@ export function AdminDashboard({
 
   return (
     <div className="space-y-6">
-      <Hero data={data} collectionRate={collectionRate} />
+      <Hero data={data} collectionRate={collectionRate} role={role} grants={grants} />
 
       <div className="flex flex-wrap items-center gap-1.5">
         {VIEWS.map((v) => (
@@ -68,7 +70,13 @@ export function AdminDashboard({
       </div>
 
       {view === 'Money' && (
-        <MoneyView data={data} role={role} collectionRate={collectionRate} outstandingShare={outstandingShare} />
+        <MoneyView
+          data={data}
+          role={role}
+          grants={grants}
+          collectionRate={collectionRate}
+          outstandingShare={outstandingShare}
+        />
       )}
       {view === 'Pipeline' && <PipelineView data={data} />}
       {view === 'Delivery' && <DeliveryView data={data} departments={departments} />}
@@ -78,7 +86,11 @@ export function AdminDashboard({
 
 /* ---------------------------------------------------------------- hero --- */
 
-function Hero({ data, collectionRate }: { data: Data; collectionRate: number }) {
+function Hero({
+  data, collectionRate, role, grants,
+}: {
+  data: Data; collectionRate: number; role: string; grants?: string[];
+}) {
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
       <div className="min-w-0">
@@ -122,7 +134,7 @@ function Hero({ data, collectionRate }: { data: Data; collectionRate: number }) 
         <span className="rounded-full bg-muted px-4 py-2 text-sm font-medium text-muted-foreground">
           FY {data.fyLabel}
         </span>
-        <QuickInvoiceButton />
+        <QuickActions role={role as never} grants={grants} />
       </div>
     </div>
   );
@@ -133,11 +145,13 @@ function Hero({ data, collectionRate }: { data: Data; collectionRate: number }) 
 function MoneyView({
   data,
   role,
+  grants,
   collectionRate,
   outstandingShare,
 }: {
   data: Data;
   role: string;
+  grants?: string[];
   collectionRate: number;
   outstandingShare: number;
 }) {
@@ -163,7 +177,12 @@ function MoneyView({
           hint={data.overdueCount > 0 ? `${data.overdueCount} past their due date` : 'Nothing overdue'}
           href="/invoices"
         />
-        <BillingCta expenses={role === 'SUPER_ADMIN' ? data.expensesFy : null} fyLabel={data.fyLabel} />
+        <BillingCta
+          expenses={role === 'SUPER_ADMIN' ? data.expensesFy : null}
+          fyLabel={data.fyLabel}
+          role={role}
+          grants={grants}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -204,7 +223,11 @@ function MoneyView({
 }
 
 /** The black card in the reference's third slot, doing real work. */
-function BillingCta({ expenses, fyLabel }: { expenses: number | null; fyLabel: string }) {
+function BillingCta({
+  expenses, fyLabel, role, grants,
+}: {
+  expenses: number | null; fyLabel: string; role: string; grants?: string[];
+}) {
   return (
     <div className="flex flex-col justify-between rounded-card bg-foreground p-5 text-background">
       <div>
@@ -220,7 +243,7 @@ function BillingCta({ expenses, fyLabel }: { expenses: number | null; fyLabel: s
       </div>
 
       <div className="mt-6 flex items-center justify-between gap-3">
-        <QuickInvoiceButton />
+        <QuickActions role={role as never} grants={grants} variant="onDark" />
         {expenses !== null && (
           <Link
             href="/expenses"

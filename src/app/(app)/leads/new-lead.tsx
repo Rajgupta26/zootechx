@@ -20,11 +20,22 @@ const SOURCES = [
   'COLD_OUTREACH', 'EVENT', 'WHATSAPP', 'OTHER',
 ];
 
-export function NewLeadDialog({ owners }: { owners: Array<{ id: string; name: string }> }) {
+export function NewLeadDialog({
+  owners,
+  autoOpen = false,
+}: {
+  owners: Array<{ id: string; name: string }>;
+  /**
+   * Opened straight away when arriving from the Quick action menu. The owner
+   * list is loaded by the page, so the menu links here rather than carrying a
+   * second copy of this form into the header.
+   */
+  autoOpen?: boolean;
+}) {
   const router = useRouter();
   const { toast } = useToast();
   const [pending, startTransition] = useTransition();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoOpen);
   const [duplicateId, setDuplicateId] = useState<string | null>(null);
 
   const [form, setForm] = useState({

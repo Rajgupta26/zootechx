@@ -7,9 +7,8 @@ import { GlobalSearch } from './global-search';
 import { NotificationBell } from './notification-bell';
 import { UserMenu } from './user-menu';
 import { ThemeToggle } from './theme-toggle';
-import { QuickInvoiceButton } from '@/components/billing/quick-invoice-modal';
+import { QuickActions } from './quick-actions';
 import { Button } from '@/components/ui/button';
-import { can } from '@/lib/rbac';
 import { cn } from '@/lib/utils';
 import type { Role } from '@prisma/client';
 
@@ -21,7 +20,6 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const canInvoice = can(user, 'invoice', 'create');
 
   return (
     /* The reference floats the application on a tinted canvas rather than
@@ -72,7 +70,7 @@ export function AppShell({
           <div className="flex-1 sm:hidden" />
 
           <div className="flex items-center gap-1">
-            {canInvoice && <QuickInvoiceButton />}
+            <QuickActions role={user.role} grants={user.grants} />
             <ThemeToggle />
             <NotificationBell />
             <UserMenu name={user.name} email={user.email} role={user.role} />

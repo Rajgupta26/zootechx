@@ -33,6 +33,7 @@ export default async function DashboardPage() {
           data={await getAdminDashboard()}
           departments={await getDepartmentPanels()}
           role={user.role}
+          grants={user.grants}
         />
       )}
       {user.role === 'SALES' && <SalesDashboard data={await getSalesDashboard(user)} />}
