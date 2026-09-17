@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, MousePointerClick, Target, TrendingUp, Users } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { requirePermission } from '@/lib/session';
+import { requirePagePermission } from '@/lib/session';
 import { scopeFilter } from '@/lib/rbac';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ import { formatDate } from '@/lib/utils';
 export const metadata: Metadata = { title: 'Campaign' };
 
 export default async function CampaignDetail({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requirePermission('campaign', 'read');
+  const user = await requirePagePermission('campaign', 'read');
   const { id } = await params;
 
   const campaign = await prisma.campaign.findFirst({

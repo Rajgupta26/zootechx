@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { forbidden, redirect } from 'next/navigation';
 import type { Role } from '@prisma/client';
 import { auth } from './auth';
 import { prisma } from './db';
@@ -88,6 +88,37 @@ export const INVALIDATE_SESSION_URL = '/api/auth/invalidate';
 export async function requireAuth(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect(INVALIDATE_SESSION_URL);
+  return user;
+}
+
+/**
+ * Page guard. Renders forbidden.tsx with a 403 rather than throwing.
+ *
+ * Kept separate from `requirePermission` because the two callers want
+ * opposite things: a page should answer 403 and show the reader where they
+ * are, while a server action should return a result its form can put in a
+ * toast. Interrupting an action would navigate the whole page away from a
+ * half-filled form.
+ */
+export async function requirePagePermission(
+  resource: Resource,
+  action: Action
+): Promise<CurrentUser> {
+  const user = await requireAuth();
+  if (!can(user, resource, action)) forbidden();
+  return user;
+}
+
+/** Page guard for a single record, by permission or explicit grant. */
+export async function requirePageRecordAccess(
+  resource: Resource,
+  action: Action,
+  recordId: string
+): Promise<CurrentUser> {
+  const user = await requireAuth();
+  if (!can(user, resource, action) && !hasRecordGrant(user, resource, action, recordId)) {
+    forbidden();
+  }
   return user;
 }
 

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { requirePermission } from '@/lib/session';
+import { requirePagePermission } from '@/lib/session';
 import { getCompanyProfile } from '@/lib/billing/invoice-service';
 import { PageHeader } from '@/components/layout/app-shell';
 import { SettingsForm } from './settings-form';
@@ -7,7 +7,7 @@ import { SettingsForm } from './settings-form';
 export const metadata: Metadata = { title: 'Settings' };
 
 export default async function SettingsPage() {
-  await requirePermission('settings', 'read');
+  await requirePagePermission('settings', 'read');
   const company = await getCompanyProfile();
 
   return (

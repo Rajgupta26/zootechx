@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { KeyRound, ShieldAlert } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { requirePermission, isSudoActive } from '@/lib/session';
+import { requirePagePermission, isSudoActive } from '@/lib/session';
 import { can } from '@/lib/rbac';
 import { PageHeader } from '@/components/layout/app-shell';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,7 +12,7 @@ import { NewCredentialDialog } from './new-credential';
 export const metadata: Metadata = { title: 'Credentials vault' };
 
 export default async function VaultPage() {
-  const user = await requirePermission('credential', 'read');
+  const user = await requirePagePermission('credential', 'read');
 
   // Secret material is deliberately excluded from this query — it only ever
   // leaves the database through revealSecretAction, one record at a time.

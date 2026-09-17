@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/db';
-import { requirePermission } from '@/lib/session';
+import { requirePagePermission } from '@/lib/session';
 import { PageHeader } from '@/components/layout/app-shell';
 import { PasteProposalForm } from './paste-form';
 
 export const metadata: Metadata = { title: 'New proposal' };
 
 export default async function NewSowPage() {
-  await requirePermission('sow', 'create');
+  await requirePagePermission('sow', 'create');
 
   const clients = await prisma.client.findMany({
     where: { deletedAt: null },

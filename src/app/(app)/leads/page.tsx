@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Users } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { requirePermission } from '@/lib/session';
+import { requirePagePermission } from '@/lib/session';
 import { scopeFilter, can } from '@/lib/rbac';
 import { PageHeader } from '@/components/layout/app-shell';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,7 +30,7 @@ export default async function LeadsPage({
 }: {
   searchParams: Promise<{ page?: string; status?: string; q?: string; new?: string }>;
 }) {
-  const user = await requirePermission('lead', 'read');
+  const user = await requirePagePermission('lead', 'read');
   const params = await searchParams;
   const { skip, take, page } = paginate(params.page);
 

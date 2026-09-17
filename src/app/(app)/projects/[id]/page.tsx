@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Bug, Clock, ExternalLink, GitBranch, Users } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { requirePermission } from '@/lib/session';
+import { requirePagePermission } from '@/lib/session';
 import { scopeFilter, can } from '@/lib/rbac';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ import { MilestoneControls } from './milestone-controls';
 export const metadata: Metadata = { title: 'Project' };
 
 export default async function ProjectDetail({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requirePermission('project', 'read');
+  const user = await requirePagePermission('project', 'read');
   const { id } = await params;
 
   const project = await prisma.project.findFirst({

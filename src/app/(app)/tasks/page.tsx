@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { ListChecks } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { requirePermission } from '@/lib/session';
+import { requirePagePermission } from '@/lib/session';
 import { scopeFilter, can } from '@/lib/rbac';
 import { PageHeader } from '@/components/layout/app-shell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +21,7 @@ const COLUMNS = [
 ] as const;
 
 export default async function TasksPage() {
-  const user = await requirePermission('task', 'read');
+  const user = await requirePagePermission('task', 'read');
 
   const tasks = await prisma.task.findMany({
     where: { status: { not: 'CANCELLED' }, ...scopeFilter(user, 'task') },

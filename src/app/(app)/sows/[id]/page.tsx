@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Download, FileCheck2, Link2, ShieldCheck } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { requirePermission } from '@/lib/session';
+import { requirePagePermission } from '@/lib/session';
 import { scopeFilter, can } from '@/lib/rbac';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import { SowActions } from './sow-actions';
 export const metadata: Metadata = { title: 'Proposal' };
 
 export default async function SowDetail({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requirePermission('sow', 'read');
+  const user = await requirePagePermission('sow', 'read');
   const { id } = await params;
 
   const sow = await prisma.sow.findFirst({

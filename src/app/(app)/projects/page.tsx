@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FolderKanban } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { requirePermission } from '@/lib/session';
+import { requirePagePermission } from '@/lib/session';
 import { scopeFilter } from '@/lib/rbac';
 import { PageHeader } from '@/components/layout/app-shell';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,7 +20,7 @@ export default async function ProjectsPage({
 }: {
   searchParams: Promise<{ page?: string }>;
 }) {
-  const user = await requirePermission('project', 'read');
+  const user = await requirePagePermission('project', 'read');
   const params = await searchParams;
   const { skip, take, page } = paginate(params.page);
   const where = scopeFilter(user, 'project');

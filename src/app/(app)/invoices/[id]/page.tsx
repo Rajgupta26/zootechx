@@ -5,7 +5,7 @@ import {
   ArrowLeft, Building2, Calendar, Download, ExternalLink, FileText, Lock,
 } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { requirePermission } from '@/lib/session';
+import { requirePagePermission } from '@/lib/session';
 import { scopeFilter, can } from '@/lib/rbac';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +24,7 @@ export default async function InvoiceDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const user = await requirePermission('invoice', 'read');
+  const user = await requirePagePermission('invoice', 'read');
   const { id } = await params;
 
   const invoice = await prisma.invoice.findFirst({

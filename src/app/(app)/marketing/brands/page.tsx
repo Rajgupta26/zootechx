@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Palette } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { requirePermission } from '@/lib/session';
+import { requirePagePermission } from '@/lib/session';
 import { scopeFilter } from '@/lib/rbac';
 import { PageHeader } from '@/components/layout/app-shell';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,7 +13,7 @@ import { formatMoney, toMinor, toNumber } from '@/lib/billing/money';
 export const metadata: Metadata = { title: 'Brands' };
 
 export default async function BrandsPage() {
-  const user = await requirePermission('brand', 'read');
+  const user = await requirePagePermission('brand', 'read');
 
   const brands = await prisma.brand.findMany({
     where: scopeFilter(user, 'brand'),

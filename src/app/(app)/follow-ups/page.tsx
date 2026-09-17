@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PhoneCall } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { requirePermission } from '@/lib/session';
+import { requirePagePermission } from '@/lib/session';
 import { scopeFilter } from '@/lib/rbac';
 import { PageHeader } from '@/components/layout/app-shell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +15,7 @@ import { CompleteFollowUp } from './complete-follow-up';
 export const metadata: Metadata = { title: 'Follow-ups' };
 
 export default async function FollowUpsPage() {
-  const user = await requirePermission('followup', 'read');
+  const user = await requirePagePermission('followup', 'read');
   const now = new Date();
 
   const followUps = await prisma.followUp.findMany({

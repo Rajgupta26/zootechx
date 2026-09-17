@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Building2, Mail, MapPin, Phone, Receipt } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { requirePermission } from '@/lib/session';
+import { requirePagePermission } from '@/lib/session';
 import { can } from '@/lib/rbac';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ import { NewInvoiceButton } from '../../invoices/new-invoice-button';
 export const metadata: Metadata = { title: 'Client' };
 
 export default async function ClientDetail({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requirePermission('client', 'read');
+  const user = await requirePagePermission('client', 'read');
   const { id } = await params;
 
   const client = await prisma.client.findFirst({

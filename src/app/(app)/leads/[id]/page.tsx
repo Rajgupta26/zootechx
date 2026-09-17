@@ -5,7 +5,7 @@ import {
   ArrowLeft, Building2, Mail, MapPin, Phone, Target, User,
 } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { requirePermission } from '@/lib/session';
+import { requirePagePermission } from '@/lib/session';
 import { scopeFilter, can } from '@/lib/rbac';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ import { NoteBody, NoteComposer } from './lead-notes';
 export const metadata: Metadata = { title: 'Lead' };
 
 export default async function LeadDetail({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requirePermission('lead', 'read');
+  const user = await requirePagePermission('lead', 'read');
   const { id } = await params;
 
   const lead = await prisma.lead.findFirst({

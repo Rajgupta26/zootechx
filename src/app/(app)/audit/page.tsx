@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { ShieldAlert, ShieldCheck, ScrollText } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { requirePermission } from '@/lib/session';
+import { requirePagePermission } from '@/lib/session';
 import { verifyAuditChain } from '@/lib/audit';
 import { PageHeader } from '@/components/layout/app-shell';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,7 +30,7 @@ export default async function AuditPage({
 }: {
   searchParams: Promise<{ page?: string; entity?: string; action?: string }>;
 }) {
-  await requirePermission('audit', 'read');
+  await requirePagePermission('audit', 'read');
   const params = await searchParams;
   const { skip, take, page } = paginate(params.page, 50);
 

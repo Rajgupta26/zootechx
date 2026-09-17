@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ScrollText } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { requirePermission } from '@/lib/session';
+import { requirePagePermission } from '@/lib/session';
 import { scopeFilter } from '@/lib/rbac';
 import { PageHeader } from '@/components/layout/app-shell';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,7 +25,7 @@ export default async function SowsPage({
 }: {
   searchParams: Promise<{ page?: string }>;
 }) {
-  const user = await requirePermission('sow', 'read');
+  const user = await requirePagePermission('sow', 'read');
   const params = await searchParams;
   const { skip, take, page } = paginate(params.page);
   const where = scopeFilter(user, 'sow');

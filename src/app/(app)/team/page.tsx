@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { UserCog } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { requirePermission } from '@/lib/session';
+import { requirePagePermission } from '@/lib/session';
 import { PageHeader } from '@/components/layout/app-shell';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -17,7 +17,7 @@ import { formatDate, initials } from '@/lib/utils';
 export const metadata: Metadata = { title: 'Team' };
 
 export default async function TeamPage() {
-  const user = await requirePermission('user', 'read');
+  const user = await requirePagePermission('user', 'read');
 
   const users = await prisma.user.findMany({
     where: {
