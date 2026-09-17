@@ -13,18 +13,45 @@ Everything in **Verified** has been tested against a production build.
 
 Each step is checkable, and later steps assume the earlier ones.
 
-### 1. A real database
+### 1. A real database — Neon
 
-Provision managed PostgreSQL — Neon, Supabase, RDS, whatever you prefer — with
-automated backups switched on and a retention window you have actually read.
-Point `DATABASE_URL` at it and create the schema:
+Create the account and project yourself at **neon.tech** (free tier is enough
+to start). Pick a region near your users — `ap-south-1` (Mumbai) if your
+clients are in India. Name the database `xcc`.
+
+Neon then shows you a connection string. **Take two of them**, because Neon
+serves the same database on two hostnames and the difference matters:
+
+| Variable | Which host | Why |
+|---|---|---|
+| `DATABASE_URL` | the one **with** `-pooler` | The app. A serverless deployment opens far more connections than Postgres holds; the pooler absorbs that. |
+| `DIRECT_URL` | the same host **without** `-pooler` | Migrations. PgBouncer in transaction mode cannot run the session-level statements a migration needs. |
+
+In the Neon dashboard the pooled string is the default; untick *Connection
+pooling* to see the direct one. Both arrive with `?sslmode=require` on them —
+leave it.
+
+Put both in `.env` (or your host's secrets manager). Never paste them into
+chat or commit them: they contain the password.
+
+Then check what you are pointed at before you touch it:
 
 ```bash
+npm run db:check       # reads only — host, SSL, pooling, migrations, row counts
 npm run db:deploy      # prisma migrate deploy — never `db push` in production
+npm run db:check       # should now say 7/7 applied, 0 users
 ```
 
+`db:check` prints no passwords, so its output is safe to share when something
+is wrong. Getting the two URLs the wrong way round is the single most common
+Neon mistake, and it surfaces as prepared-statement errors that read like a
+broken migration — `db:check` names it directly, and so does the startup check.
+
+Switch on **point-in-time restore** in Neon's settings and read the retention
+window. The free tier keeps less history than you probably assume.
+
 Do not run `npm run db:seed` against it. The seed deletes every row before it
-writes, and it now refuses any database that is not on localhost.
+writes, and it refuses any database that is not on localhost.
 
 ### 2. The first account
 

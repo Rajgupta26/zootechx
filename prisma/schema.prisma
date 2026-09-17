@@ -8,6 +8,18 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+
+  // Neon (and every other pooled Postgres) serves two endpoints. The pooled
+  // one — the host with `-pooler` in it — is what the app should use, because
+  // a serverless deployment opens far more connections than Postgres will
+  // hold. But PgBouncer in transaction mode cannot run the session-level
+  // statements a migration needs, so `prisma migrate deploy` has to reach the
+  // database directly. Without this split, migrations fail with prepared
+  // statement errors that read like a bug in the migration itself.
+  //
+  // Prisma requires this variable to exist once it is referenced, so in
+  // development set DIRECT_URL to the same value as DATABASE_URL.
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================================

@@ -73,6 +73,26 @@ export function inspectEnv(env: Record<string, string | undefined> = process.env
     );
   }
 
+  // --- The pooled/direct split, which fails late and confusingly ---
+
+  const directHost = hostOf(env.DIRECT_URL);
+  if (dbHost && !LOCAL_HOSTS.has(dbHost)) {
+    if (!env.DATABASE_URL?.includes('sslmode=require')) {
+      warnings.push(
+        `DATABASE_URL has no sslmode=require. Traffic to ${dbHost} should be encrypted — ` +
+          'Neon and most managed providers put it on the string for you.'
+      );
+    }
+    if (dbHost.includes('-pooler') && directHost?.includes('-pooler')) {
+      warnings.push(
+        'DATABASE_URL and DIRECT_URL both point at the pooled endpoint. Migrations ' +
+          'need the direct one: the same host with `-pooler` removed. Left as is, ' +
+          '`prisma migrate deploy` fails with prepared-statement errors that read ' +
+          'like a broken migration.'
+      );
+    }
+  }
+
   // --- How the app addresses itself ---
 
   const appUrl = env.NEXT_PUBLIC_APP_URL;

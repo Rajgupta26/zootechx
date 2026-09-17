@@ -10,7 +10,8 @@ import { inspectEnv } from '@/lib/env';
 const good = {
   AUTH_SECRET: 'a'.repeat(44),
   VAULT_MASTER_KEY: Buffer.alloc(32, 7).toString('base64'),
-  DATABASE_URL: 'postgresql://user:pass@db.internal.example.com:5432/xcc',
+  DATABASE_URL: 'postgresql://user:pass@db.internal.example.com:5432/xcc?sslmode=require',
+  DIRECT_URL: 'postgresql://user:pass@db.internal.example.com:5432/xcc?sslmode=require',
   NEXT_PUBLIC_APP_URL: 'https://crm.zootechx.com',
   CRON_SECRET: 'cron-secret',
   STORAGE_PROVIDER: 's3',
@@ -74,5 +75,45 @@ describe('environment check', () => {
   it('warns that local storage loses files on a container host', () => {
     const { warnings } = inspectEnv({ ...good, STORAGE_PROVIDER: 'local' });
     expect(warnings.join(' ')).toContain('lost on the next deploy');
+  });
+
+  /**
+   * Neon serves the same database on two hostnames. Pointing migrations at the
+   * pooled one fails with prepared-statement errors that read like a broken
+   * migration, so it is worth naming before anyone spends an evening on it.
+   */
+  describe('pooled and direct endpoints', () => {
+    const neon = {
+      ...good,
+      DATABASE_URL: 'postgresql://u:p@ep-cool-bird-123-pooler.ap-south-1.aws.neon.tech/xcc?sslmode=require',
+      DIRECT_URL: 'postgresql://u:p@ep-cool-bird-123.ap-south-1.aws.neon.tech/xcc?sslmode=require',
+    };
+
+    it('is quiet when they are set the right way round', () => {
+      expect(inspectEnv(neon)).toEqual({ errors: [], warnings: [] });
+    });
+
+    it('catches migrations aimed at the pooled endpoint', () => {
+      const { warnings } = inspectEnv({ ...neon, DIRECT_URL: neon.DATABASE_URL });
+      expect(warnings.join(' ')).toContain('Migrations need the direct one');
+    });
+
+    it('catches an unencrypted connection to a remote database', () => {
+      const { warnings } = inspectEnv({
+        ...neon,
+        DATABASE_URL: neon.DATABASE_URL.replace('?sslmode=require', ''),
+      });
+      expect(warnings.join(' ')).toContain('should be encrypted');
+    });
+
+    it('says nothing about ssl or pooling for a local database', () => {
+      const { warnings } = inspectEnv({
+        ...good,
+        DATABASE_URL: 'postgresql://p:p@localhost:5432/postgres',
+        DIRECT_URL: 'postgresql://p:p@localhost:5432/postgres',
+      });
+      expect(warnings.join(' ')).not.toContain('encrypted');
+      expect(warnings.join(' ')).not.toContain('pooled');
+    });
   });
 });
