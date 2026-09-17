@@ -15,3 +15,4 @@ next-env.d.ts
 # Embedded dev database (PGlite) and locally generated files
 .pglite
 .pgdata
+backups/

@@ -15,6 +15,9 @@ const { auth } = NextAuth(authConfig);
  */
 const PUBLIC_PREFIXES = [
   '/login', '/sign', '/pay', '/api/webhooks', '/api/cron', '/api/auth', '/api/files',
+  // The host's health check has no session. A probe that gets redirected to
+  // /login reads as 200-OK-and-healthy no matter what state the app is in.
+  '/api/health',
 ];
 
 /** Route prefixes the CLIENT role may reach. Everything else is staff-only. */

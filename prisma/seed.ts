@@ -31,7 +31,47 @@ if (!process.env.VAULT_MASTER_KEY) {
   );
 }
 
+/**
+ * This script DELETES EVERYTHING before it writes. Pointed at the production
+ * database it would destroy the business in one command, and nothing about
+ * `npm run db:seed` warns you which database is configured.
+ *
+ * So it refuses unless the target is obviously a local development database.
+ * SEED_ALLOW_REMOTE=1 overrides it — for a staging environment you are
+ * deliberately rebuilding, and never for production.
+ */
+function refuseUnlessLocalDatabase(): void {
+  if (process.env.SEED_ALLOW_REMOTE === '1') {
+    console.warn('⚠  SEED_ALLOW_REMOTE=1 — deleting everything in a non-local database.\n');
+    return;
+  }
+
+  const url = process.env.DATABASE_URL ?? '';
+  const host = (() => {
+    try {
+      return new URL(url).hostname;
+    } catch {
+      return '';
+    }
+  })();
+
+  const isLocal = ['localhost', '127.0.0.1', '::1', '0.0.0.0'].includes(host);
+
+  if (process.env.NODE_ENV === 'production' || !isLocal) {
+    console.error(
+      `\n✖ Refusing to seed.\n\n` +
+        `  This script deletes every row in the database before it writes.\n` +
+        `  DATABASE_URL points at ${host || '(unparseable)'}, which is not a local database` +
+        `${process.env.NODE_ENV === 'production' ? ', and NODE_ENV is production' : ''}.\n\n` +
+        `  If you really mean to wipe a staging database: SEED_ALLOW_REMOTE=1 npm run db:seed\n`
+    );
+    process.exit(1);
+  }
+}
+
 async function main() {
+  refuseUnlessLocalDatabase();
+
   console.log('🌱 Seeding XCC CRM…\n');
 
   // ---------- Reset ----------
