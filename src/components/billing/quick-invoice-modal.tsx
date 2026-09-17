@@ -2,10 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Check, ChevronsUpDown, Copy, ExternalLink, FileText, Loader2,
-  Mail, MessageCircle, Plus, Receipt, Send, Sparkles,
-} from 'lucide-react';
+import { AlertTriangle, Check, ChevronsUpDown, Copy, ExternalLink, FileText, Loader2, Mail, MessageCircle, Plus, Receipt, Send, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -339,6 +336,27 @@ export function QuickInvoiceModal({
                           </span>
                         )}
                       </div>
+
+                      {/*
+                        Without a place of supply the tax engine falls back to
+                        intra-state, which is right for a local walk-in and
+                        wrong for a client in another state. The totals match
+                        either way at the same rate, but the heads do not, and
+                        the heads are what gets filed. Say so before the
+                        invoice is raised rather than after.
+                      */}
+                      {!preview.placeOfSupply
+                        && (preview.treatment === 'INTRA_STATE' || preview.treatment === 'INTER_STATE') && (
+                        <div className="mb-2.5 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/5 p-2.5 text-xs">
+                          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
+                          <span>
+                            This client has no place of supply, so the split is
+                            assumed to be CGST + SGST. If they are in another
+                            state it should be IGST — set their state on the
+                            client record first.
+                          </span>
+                        </div>
+                      )}
 
                       <Row label="Taxable value" value={formatMoney(preview.subTotal, currency)} />
                       {Number(preview.cgst) > 0 && (
