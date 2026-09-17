@@ -264,14 +264,23 @@ export const campaignSchema = z.object({
 // ---------- Admin ----------
 
 export const userSchema = z.object({
-  name: z.string().min(2).max(120),
-  email: z.string().email(),
+  name: z.string({ required_error: 'Give their full name' }).min(2, 'Give their full name').max(120),
+  email: z.string({ required_error: 'An email address is required' }).email('That is not a valid email address'),
   phone: z.string().max(24).optional(),
   role: z.enum(['SUPER_ADMIN', 'SUB_ADMIN', 'SALES', 'DEVELOPER', 'MARKETING', 'CLIENT']),
   department: z.string().max(60).optional(),
   clientId: z.string().optional(),
-  password: z.string().min(8, 'At least 8 characters').optional(),
+  // 12, matching the bootstrap account. Every staff role here can read client
+  // contracts, and several can see money.
+  password: z
+    .string({ required_error: 'Set a starting password' })
+    .min(12, 'At least 12 characters'),
   status: z.enum(['ACTIVE', 'INVITED', 'SUSPENDED']).default('ACTIVE'),
+}).refine((v) => v.role !== 'CLIENT' || Boolean(v.clientId), {
+  // A portal account with no company would see either nothing or everything,
+  // depending on which query forgot to scope. Neither is acceptable.
+  message: 'A client portal account must be tied to a client',
+  path: ['clientId'],
 });
 
 export const expenseSchema = z.object({

@@ -11,6 +11,8 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/misc';
 import { EmptyState } from '@/components/ui/empty-state';
+import { can, assignableRoles } from '@/lib/rbac';
+import { NewMemberDialog } from './new-member';
 import { ROLE_LABELS } from '@/lib/rbac';
 import { formatDate, initials } from '@/lib/utils';
 
@@ -35,11 +37,26 @@ export default async function TeamPage() {
   const staff = users.filter((u) => u.role !== 'CLIENT');
   const portal = users.filter((u) => u.role === 'CLIENT');
 
+  // A Sub admin may add people but not another Super admin, so the picker is
+  // built from the same list the server action enforces.
+  const mayAdd = can(user, 'user', 'create');
+  const assignable = mayAdd ? assignableRoles(user.role) : [];
+  const clients = assignable.includes('CLIENT')
+    ? await prisma.client.findMany({
+        where: { deletedAt: null },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      })
+    : [];
+
   return (
     <>
       <PageHeader
         title="Team"
         subtitle="Roles determine what each person can see and do. Permissions are enforced server-side."
+        action={
+          mayAdd ? <NewMemberDialog assignable={assignable} clients={clients} /> : undefined
+        }
       />
 
       <Card className="mb-5">

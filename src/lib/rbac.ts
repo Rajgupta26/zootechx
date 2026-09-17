@@ -104,6 +104,27 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
 };
 
 /**
+ * Which roles a given role may hand out when creating an account.
+ *
+ * A Sub admin must not be able to mint a Super admin. The Team page already
+ * hides Super admin accounts from them — letting them create one would hand
+ * back, in one form submission, exactly the access that hiding was protecting.
+ *
+ * Lives here rather than beside the action because a 'use server' module may
+ * only export async functions, and the Team page needs this synchronously to
+ * build its role picker.
+ */
+export function assignableRoles(actorRole: Role): Role[] {
+  if (actorRole === 'SUPER_ADMIN') {
+    return ['SUPER_ADMIN', 'SUB_ADMIN', 'SALES', 'DEVELOPER', 'MARKETING', 'CLIENT'];
+  }
+  if (actorRole === 'SUB_ADMIN') {
+    return ['SALES', 'DEVELOPER', 'MARKETING', 'CLIENT'];
+  }
+  return [];
+}
+
+/**
  * Permissions a role may hold only for records it owns/is assigned to.
  * Everything else in ROLE_PERMISSIONS is org-wide for that role.
  */
