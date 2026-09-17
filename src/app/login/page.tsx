@@ -2,24 +2,27 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { Zap } from 'lucide-react';
 import { LoginForm } from './login-form';
+import { LoginBackdrop } from './backdrop';
 
 export const metadata: Metadata = { title: 'Sign in' };
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen gap-3 bg-canvas p-0 lg:p-3">
       {/* Brand panel */}
-      <div className="relative hidden w-1/2 flex-col justify-between bg-primary p-12 text-primary-foreground lg:flex">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-white/15">
-            <Zap className="h-4 w-4" />
+      <div className="relative isolate hidden w-1/2 flex-col justify-between overflow-hidden bg-primary p-12 text-primary-foreground lg:flex lg:rounded-card">
+        <LoginBackdrop />
+
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-highlight">
+            <Zap className="h-4 w-4 text-highlight-foreground" />
           </div>
-          <span className="text-lg font-semibold tracking-tight">XCC CRM</span>
+          <span className="text-lg font-bold tracking-tight">XCC CRM</span>
         </div>
 
         <div className="max-w-md">
-          <h1 className="text-3xl font-semibold leading-tight tracking-tight">
-            Leads to invoices, without the paperwork in between.
+          <h1 className="display text-[2.1rem]">
+            Leads to invoices, without the paperwork in between
           </h1>
           <p className="mt-4 text-primary-foreground/80">
             Pipeline, delivery and marketing in one place — plus GST-correct billing
@@ -44,7 +47,7 @@ export default function LoginPage() {
       </div>
 
       {/* Form */}
-      <div className="flex w-full flex-col items-center justify-center px-6 py-12 lg:w-1/2">
+      <div className="flex w-full flex-col items-center justify-center bg-background px-6 py-12 lg:w-1/2 lg:rounded-card">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-2 lg:hidden">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">

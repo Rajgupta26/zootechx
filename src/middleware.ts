@@ -50,5 +50,9 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|gif|webp|ico)$).*)'],
+  // Static media must be excluded or the middleware answers with a redirect
+  // to /login. The sign-in page's own backdrop is fetched by a visitor who by
+  // definition has no session, and a video that 302s to HTML surfaces only as
+  // "source not supported", with nothing to say why.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|gif|webp|ico|mp4|webm)$).*)'],
 };
