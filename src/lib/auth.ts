@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { prisma } from './db';
 import { authConfig } from './auth.config';
 import { audit } from './audit';
+import { clearFailures, lockoutRemainingMs, recordFailure } from './auth-throttle';
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -25,6 +26,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!parsed.success) return null;
 
         const { email, password } = parsed.data;
+
+        const locked = lockoutRemainingMs(email);
+        if (locked > 0) {
+          throw new Error(
+            `Too many sign-in attempts. Try again in ${Math.ceil(locked / 60_000)} minutes.`
+          );
+        }
+
         const user = await prisma.user.findUnique({
           where: { email: email.toLowerCase().trim() },
         });
@@ -34,10 +43,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const hash = user?.passwordHash ?? '$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidinv';
         const ok = await bcrypt.compare(password, hash);
 
-        if (!user || !ok || user.deletedAt) return null;
+        if (!user || !ok || user.deletedAt) {
+          recordFailure(email);
+          return null;
+        }
         if (user.status === 'SUSPENDED') {
           throw new Error('Your account has been suspended. Contact an administrator.');
         }
+
+        clearFailures(email);
 
         await prisma.user.update({
           where: { id: user.id },

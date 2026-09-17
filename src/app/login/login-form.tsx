@@ -38,7 +38,17 @@ export function LoginForm() {
     const res = await signIn('credentials', { email, password, redirect: false });
 
     if (res?.error) {
-      setError('That email and password combination did not work.');
+      // Auth.js reports a bad password as CredentialsSignin and redacts the
+      // message from anything authorize() throws, which is how both a lockout
+      // and a suspended account arrive. Telling someone to check their
+      // password when the account is locked just makes them keep guessing.
+      setError(
+        res.error === 'CredentialsSignin'
+          ? 'That email and password combination did not work.'
+          : 'Sign-in is blocked for this account right now — either too many '
+            + 'failed attempts, or the account is not active. Wait a few '
+            + 'minutes, or ask an administrator.'
+      );
       setLoading(false);
       return;
     }
