@@ -47,18 +47,18 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        'flex h-full shrink-0 flex-col border-r bg-card transition-[width] duration-200',
+        'flex h-full shrink-0 flex-col overflow-hidden bg-foreground text-background transition-[width] duration-200 lg:rounded-card',
         collapsed ? 'w-[68px]' : 'w-60'
       )}
     >
-      <div className="flex h-14 items-center gap-2 border-b px-4">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary">
-          <Zap className="h-4 w-4 text-primary-foreground" />
+      <div className="flex h-16 items-center gap-2.5 px-4">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-highlight">
+          <Zap className="h-4 w-4 text-highlight-foreground" />
         </div>
-        {!collapsed && <span className="truncate font-semibold tracking-tight">XCC CRM</span>}
+        {!collapsed && <span className="truncate font-bold tracking-tight">XCC CRM</span>}
         <button
           onClick={() => setCollapsed((c) => !c)}
-          className="ml-auto hidden rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground lg:block"
+          className="ml-auto hidden rounded-lg p-1 text-background/50 transition-colors hover:bg-background/10 hover:text-background lg:block"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <ChevronLeft className={cn('h-4 w-4 transition-transform', collapsed && 'rotate-180')} />
@@ -109,7 +109,7 @@ export function Sidebar({
                 </button>
 
                 {open && (
-                  <ul className="ml-[1.4rem] mt-0.5 space-y-0.5 border-l pl-2.5">
+                  <ul className="ml-[1.4rem] mt-0.5 space-y-0.5 border-l border-background/15 pl-2.5">
                     {group.children.map((child) => {
                       const here = onPage(child.href);
                       return (
@@ -119,10 +119,10 @@ export function Sidebar({
                             onClick={onNavigate}
                             title={child.hint}
                             className={cn(
-                              'block truncate rounded-md px-2.5 py-1.5 text-sm transition-colors',
+                              'block truncate rounded-lg px-2.5 py-1.5 text-sm transition-colors',
                               here
-                                ? 'bg-primary/10 font-medium text-primary'
-                                : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                                ? 'bg-highlight font-semibold text-highlight-foreground'
+                                : 'text-background/60 hover:bg-background/10 hover:text-background'
                             )}
                           >
                             {child.label}
@@ -143,9 +143,9 @@ export function Sidebar({
 
 function rowClass(active: boolean) {
   return cn(
-    'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors',
+    'flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-colors',
     active
-      ? 'bg-primary/10 text-primary'
-      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+      ? 'bg-background/10 text-background'
+      : 'text-background/60 hover:bg-background/10 hover:text-background'
   );
 }

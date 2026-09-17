@@ -24,7 +24,9 @@ export function AppShell({
   const canInvoice = can(user, 'invoice', 'create');
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    /* The reference floats the application on a tinted canvas rather than
+       filling the window with it. The inset is the whole trick. */
+    <div className="flex h-screen gap-3 overflow-hidden bg-canvas p-0 lg:p-3">
       {/* Desktop sidebar */}
       <div className="hidden lg:flex">
         <Sidebar role={user.role} grants={user.grants} />
@@ -52,8 +54,8 @@ export function AppShell({
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-card px-3 sm:px-4">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background lg:rounded-card">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-3 sm:px-5">
           <Button
             variant="ghost"
             size="icon"
@@ -77,7 +79,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className={cn('flex-1 overflow-y-auto scrollbar-thin bg-background')}>
+        <main className={cn('flex-1 overflow-y-auto scrollbar-thin')}>
           <div className="mx-auto w-full max-w-[1600px] p-4 sm:p-6">
             {children}
           </div>
@@ -99,7 +101,7 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
-        <h1 className="truncate text-2xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="display truncate text-[1.75rem]">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
       </div>
       {action && <div className="flex shrink-0 items-center gap-2">{action}</div>}

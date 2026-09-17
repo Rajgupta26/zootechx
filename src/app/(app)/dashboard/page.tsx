@@ -21,10 +21,14 @@ export default async function DashboardPage() {
   const user = await requireAuth();
   const copy = DASHBOARD_TITLES[user.role];
 
+  const admin = user.role === 'SUPER_ADMIN' || user.role === 'SUB_ADMIN';
+
   return (
     <>
-      <PageHeader title={copy.title} subtitle={copy.subtitle} />
-      {(user.role === 'SUPER_ADMIN' || user.role === 'SUB_ADMIN') && (
+      {/* The admin dashboard opens with its own headline, which says something
+          about the business rather than naming the screen. */}
+      {!admin && <PageHeader title={copy.title} subtitle={copy.subtitle} />}
+      {admin && (
         <AdminDashboard
           data={await getAdminDashboard()}
           departments={await getDepartmentPanels()}

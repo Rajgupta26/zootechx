@@ -3,57 +3,74 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+   * Palette sampled from the reference design rather than guessed: sage
+   * canvas #adb9b1, cream page #edeeed, near-white cards #f8f9f8, ink #17181c,
+   * lime #eefb94. Ink is the primary action colour — the reference's buttons
+   * and active pills are black — and lime is the highlight, used on exactly
+   * one card and one chart series so it keeps its force.
+   */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 4%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 4%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 4%;
-    --primary: 243 75% 59%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 6% 10%;
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
-    --accent: 240 5% 96%;
-    --accent-foreground: 240 6% 10%;
-    --destructive: 0 72% 51%;
+    --canvas: 140 8% 70%;
+    --background: 120 3% 93%;
+    --foreground: 228 10% 10%;
+    --card: 120 5% 97%;
+    --card-foreground: 228 10% 10%;
+    --popover: 120 5% 97%;
+    --popover-foreground: 228 10% 10%;
+    --primary: 228 10% 10%;
+    --primary-foreground: 120 5% 97%;
+    --secondary: 120 4% 89%;
+    --secondary-foreground: 228 10% 10%;
+    --muted: 120 4% 90%;
+    --muted-foreground: 130 4% 44%;
+    --accent: 120 5% 88%;
+    --accent-foreground: 228 10% 10%;
+    /* The one loud colour. Never a background for body text. */
+    --highlight: 68 93% 78%;
+    --highlight-foreground: 228 10% 10%;
+    --destructive: 4 74% 50%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 71% 45%;
+    --success: 152 45% 34%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 240 10% 4%;
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 243 75% 59%;
-    --radius: 0.625rem;
+    --warning: 35 88% 48%;
+    --warning-foreground: 228 10% 10%;
+    --border: 120 5% 86%;
+    --input: 120 5% 84%;
+    --ring: 228 10% 10%;
+    --radius: 0.75rem;
+    /* Cards are far rounder than controls, which is most of the reference's
+       character. Kept separate so inputs and badges do not inherit it. */
+    --radius-card: 1.5rem;
   }
 
   .dark {
-    --background: 240 10% 4%;
-    --foreground: 0 0% 98%;
-    --card: 240 6% 8%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 6% 8%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 243 75% 66%;
-    --primary-foreground: 240 10% 4%;
-    --secondary: 240 4% 14%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 4% 14%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 240 4% 16%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 63% 50%;
-    --destructive-foreground: 0 0% 98%;
-    --success: 142 66% 45%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 55%;
-    --warning-foreground: 240 10% 4%;
-    --border: 240 4% 18%;
-    --input: 240 4% 18%;
-    --ring: 243 75% 66%;
+    --canvas: 228 10% 6%;
+    --background: 228 9% 9%;
+    --foreground: 120 5% 96%;
+    --card: 228 8% 13%;
+    --card-foreground: 120 5% 96%;
+    --popover: 228 8% 13%;
+    --popover-foreground: 120 5% 96%;
+    --primary: 120 5% 96%;
+    --primary-foreground: 228 10% 10%;
+    --secondary: 228 7% 18%;
+    --secondary-foreground: 120 5% 96%;
+    --muted: 228 7% 17%;
+    --muted-foreground: 130 4% 62%;
+    --accent: 228 7% 20%;
+    --accent-foreground: 120 5% 96%;
+    --highlight: 68 88% 72%;
+    --highlight-foreground: 228 10% 10%;
+    --destructive: 4 70% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 45% 46%;
+    --success-foreground: 228 10% 10%;
+    --warning: 35 88% 58%;
+    --warning-foreground: 228 10% 10%;
+    --border: 228 7% 20%;
+    --input: 228 7% 22%;
+    --ring: 68 88% 72%;
   }
 }
 
@@ -65,9 +82,24 @@
   }
   /* Tabular numerals everywhere money appears, so columns align. */
   .tabular { font-variant-numeric: tabular-nums; }
+
+  /* The hero line. Tight enough that two lines read as one block. */
+  .display {
+    @apply font-extrabold tracking-[-0.035em];
+    line-height: 0.98;
+  }
 }
 
 @layer utilities {
+  /* Bars grow from the baseline on first paint; a still page reads as broken
+     when the numbers are the point. Height is set inline per bar. */
+  @keyframes grow-up { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  .grow-up { transform-origin: bottom; animation: grow-up 620ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .grow-up { animation: none; }
+  }
+
   .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
   .scrollbar-thin::-webkit-scrollbar-thumb {
     @apply rounded-full bg-border;
