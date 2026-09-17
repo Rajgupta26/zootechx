@@ -14,6 +14,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { formatMoney } from '@/lib/billing/money';
 import { formatDate, formatDateTime, relativeTime } from '@/lib/utils';
 import { LeadActions } from './lead-actions';
+import { NoteBody, NoteComposer } from './lead-notes';
 
 export const metadata: Metadata = { title: 'Lead' };
 
@@ -28,11 +29,17 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
       campaign: { select: { id: true, name: true, platform: true } },
       convertedClient: { select: { id: true, name: true } },
       followUps: { orderBy: { dueAt: 'desc' }, include: { assignee: { select: { name: true } } } },
-      activities: { orderBy: { createdAt: 'desc' }, take: 20 },
+      activities: {
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        include: { actor: { select: { name: true } } },
+      },
     },
   });
 
   if (!lead) notFound();
+
+  const canComment = can(user, 'lead', 'comment');
 
   const owners = can(user, 'lead', 'assign')
     ? await prisma.user.findMany({
@@ -121,19 +128,36 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Activity</CardTitle>
+              <CardTitle className="text-base">Notes &amp; activity</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
+              {canComment && <NoteComposer leadId={lead.id} />}
+
               {lead.activities.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">No activity yet.</p>
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  {canComment ? 'Nothing here yet — add the first note.' : 'No activity yet.'}
+                </p>
               ) : (
                 <ul className="space-y-3">
                   {lead.activities.map((a) => (
                     <li key={a.id} className="flex gap-3 text-sm">
-                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                      <span
+                        className={
+                          a.type === 'note'
+                            ? 'mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary'
+                            : 'mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/40'
+                        }
+                      />
                       <div className="min-w-0 flex-1">
-                        <p>{a.body}</p>
-                        <p className="text-xs text-muted-foreground">{formatDateTime(a.createdAt)}</p>
+                        {a.type === 'note' ? (
+                          <NoteBody text={a.body} />
+                        ) : (
+                          <p className="text-muted-foreground">{a.body}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {a.actor?.name ? `${a.actor.name} · ` : ''}
+                          {formatDateTime(a.createdAt)}
+                        </p>
                       </div>
                     </li>
                   ))}

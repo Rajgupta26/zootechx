@@ -306,6 +306,7 @@ model User {
   paymentsRecorded Payment[]          @relation("PaymentRecorder")
   expenses         Expense[]          @relation("ExpenseOwner")
   expensesApproved Expense[]          @relation("ExpenseApprover")
+  activities       Activity[]         @relation("ActivityActor")
   credentials      Credential[]
   credentialAccess CredentialAccess[]
   notifications    Notification[]
@@ -594,7 +595,8 @@ model Activity {
   clientId  String?
   client    Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
   actorId   String?
-  type      String // "note" | "status_change" | "email_sent" | "call"
+  actor     User?    @relation("ActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+  type      String // "note" | "status_change" | "follow_up"
   body      String
   metadata  Json?
   createdAt DateTime @default(now())

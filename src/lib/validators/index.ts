@@ -86,6 +86,10 @@ export const leadSchema = leadBaseSchema.refine((v) => Boolean(v.email || v.phon
   path: ['email'],
 });
 
+export const leadNoteSchema = z.object({
+  body: z.string().trim().min(1, 'Write something first').max(2000, 'Keep a note under 2000 characters'),
+});
+
 export const clientSchema = z.object({
   name: z.string().min(2, 'Name is required').max(160),
   legalName: z.string().max(200).optional(),

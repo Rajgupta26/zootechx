@@ -20,7 +20,11 @@ export const RESOURCES = [
 ] as const;
 
 export type Resource = (typeof RESOURCES)[number];
-export type Action = 'read' | 'create' | 'update' | 'delete' | 'approve' | 'reveal' | 'send' | 'assign';
+export type Action =
+  | 'read' | 'create' | 'update' | 'delete'
+  | 'approve' | 'reveal' | 'send' | 'assign'
+  /** Add to a record's timeline without being able to change the record. */
+  | 'comment';
 export type Permission = `${Resource}:${Action}` | '*';
 
 const ALL: Permission[] = ['*'];
@@ -34,7 +38,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
 
   SUB_ADMIN: [
     'dashboard:read', 'report:read',
-    'lead:read', 'lead:create', 'lead:update', 'lead:delete', 'lead:assign',
+    'lead:read', 'lead:create', 'lead:update', 'lead:delete', 'lead:assign', 'lead:comment',
     'client:read', 'client:create', 'client:update', 'client:delete',
     'followup:read', 'followup:create', 'followup:update', 'followup:delete', 'followup:assign',
     'sow:read', 'sow:create', 'sow:update', 'sow:send', 'sow:approve',
@@ -54,7 +58,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
 
   SALES: [
     'dashboard:read',
-    'lead:read', 'lead:create', 'lead:update', 'lead:delete',
+    'lead:read', 'lead:create', 'lead:update', 'lead:delete', 'lead:comment',
     'client:read', 'client:create', 'client:update',
     'followup:read', 'followup:create', 'followup:update',
     'sow:read', 'sow:create', 'sow:update', 'sow:send',
@@ -82,7 +86,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'dashboard:read',
     'brand:read', 'brand:create', 'brand:update',
     'campaign:read', 'campaign:create', 'campaign:update',
-    'lead:read', 'lead:create',
+    'lead:read', 'lead:create', 'lead:comment',
     'client:read',
     'task:read', 'task:update',
     'credential:read',
@@ -104,7 +108,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
  * Everything else in ROLE_PERMISSIONS is org-wide for that role.
  */
 export const OWN_SCOPED: Partial<Record<Role, Permission[]>> = {
-  SALES: ['lead:read', 'lead:update', 'lead:delete', 'followup:read', 'followup:update'],
+  SALES: ['lead:read', 'lead:update', 'lead:delete', 'lead:comment', 'followup:read', 'followup:update'],
   DEVELOPER: ['project:read', 'project:update', 'milestone:update', 'progresslog:update', 'task:update'],
   MARKETING: ['brand:update', 'campaign:update'],
   CLIENT: ['project:read', 'milestone:read', 'sow:read', 'invoice:read', 'payment:read'],

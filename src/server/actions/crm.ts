@@ -5,9 +5,10 @@ import { prisma } from '@/lib/db';
 import { audit } from '@/lib/audit';
 import { notify } from '@/lib/notifications';
 import { requirePermission, requestContext } from '@/lib/session';
+import { scopeFilter } from '@/lib/rbac';
 import { normaliseEmail, normalisePhoneDigits } from '@/lib/utils';
 import {
-  leadSchema, leadBaseSchema, clientSchema, followUpSchema, taskSchema,
+  leadSchema, leadBaseSchema, leadNoteSchema, clientSchema, followUpSchema, taskSchema,
   projectSchema, progressLogSchema, issueSchema, expenseSchema,
 } from '@/lib/validators';
 import type { ActionResult } from './billing';
@@ -141,6 +142,46 @@ export async function updateLeadAction(id: string, raw: unknown): Promise<Action
 
     revalidatePath('/leads');
     revalidatePath(`/leads/${id}`);
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/**
+ * Add a note to a lead's timeline.
+ *
+ * Gated on `lead:comment`, not `lead:update`: Marketing needs to leave a
+ * demo link or a campaign note on a lead without being able to rename it,
+ * change its status or reassign it. The scope filter still applies, so Sales
+ * can only annotate leads they own.
+ */
+export async function addLeadNoteAction(leadId: string, raw: unknown): Promise<ActionResult> {
+  try {
+    const parsed = leadNoteSchema.safeParse(raw);
+    if (!parsed.success) {
+      return { ok: false, error: 'Check the highlighted fields.', fieldErrors: parsed.error.flatten().fieldErrors };
+    }
+
+    const user = await requirePermission('lead', 'comment');
+
+    const lead = await prisma.lead.findFirst({
+      where: { id: leadId, deletedAt: null, ...scopeFilter(user, 'lead') },
+      select: { id: true, name: true },
+    });
+    if (!lead) return { ok: false, error: 'Lead not found.' };
+
+    await prisma.activity.create({
+      data: { leadId: lead.id, actorId: user.id, type: 'note', body: parsed.data.body },
+    });
+
+    await audit({
+      actorId: user.id, actorEmail: user.email, actorRole: user.role,
+      action: 'lead.note', entity: 'lead', entityId: lead.id,
+      summary: `Added a note to lead ${lead.name}`,
+    });
+
+    revalidatePath(`/leads/${lead.id}`);
     return { ok: true };
   } catch (err) {
     return fail(err);
