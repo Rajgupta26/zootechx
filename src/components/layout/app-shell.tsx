@@ -22,9 +22,10 @@ export function AppShell({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    /* The reference floats the application on a tinted canvas rather than
-       filling the window with it. The inset is the whole trick. */
-    <div className="flex h-screen gap-3 overflow-hidden bg-canvas p-0 lg:p-3">
+    /* Edge to edge. The app used to float on a tinted canvas with a 12px
+       inset all round; at desk width that read as a gap someone forgot to
+       close rather than as a deliberate frame. */
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop sidebar */}
       <div className="hidden lg:flex">
         <Sidebar role={user.role} grants={user.grants} />
@@ -52,8 +53,11 @@ export function AppShell({
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background lg:rounded-card">
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-3 sm:px-5">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
+        {/* Padding matches the main content's, so the search field and the
+            avatar line up with the page headline and the cards below them —
+            they were 4px adrift. */}
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 sm:px-6">
           <Button
             variant="ghost"
             size="icon"

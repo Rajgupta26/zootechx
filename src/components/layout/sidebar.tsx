@@ -48,7 +48,7 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        'flex h-full shrink-0 flex-col overflow-hidden bg-rail text-rail-foreground transition-[width] duration-200 lg:rounded-card',
+        'flex h-full shrink-0 flex-col overflow-hidden bg-rail text-rail-foreground transition-[width] duration-200',
         collapsed ? 'w-[68px]' : 'w-60'
       )}
     >
