@@ -1,8 +1,8 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { Zap } from 'lucide-react';
 import { LoginForm } from './login-form';
 import { LoginBackdrop } from './backdrop';
+import { Wordmark } from '@/components/layout/wordmark';
 
 export const metadata: Metadata = { title: 'Sign in' };
 
@@ -13,12 +13,7 @@ export default function LoginPage() {
       <div className="relative isolate hidden w-1/2 flex-col justify-between overflow-hidden bg-primary p-12 text-primary-foreground lg:flex lg:rounded-card">
         <LoginBackdrop />
 
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-highlight">
-            <Zap className="h-4 w-4 text-highlight-foreground" />
-          </div>
-          <span className="text-lg font-bold tracking-tight">XCC CRM</span>
-        </div>
+        <Wordmark tone="light" height={26} />
 
         <div className="max-w-md">
           <h1 className="display text-[2.1rem]">
@@ -49,12 +44,8 @@ export default function LoginPage() {
       {/* Form */}
       <div className="flex w-full flex-col items-center justify-center bg-background px-6 py-12 lg:w-1/2 lg:rounded-card">
         <div className="w-full max-w-sm">
-          <div className="mb-8 flex items-center gap-2 lg:hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-              <Zap className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-semibold tracking-tight">XCC CRM</span>
-          </div>
+          {/* The brand panel is hidden on a phone, so the mark belongs here. */}
+          <Wordmark height={24} className="mb-8 lg:hidden" />
 
           <h2 className="text-2xl font-semibold tracking-tight">Sign in</h2>
           <p className="mt-1.5 text-sm text-muted-foreground">

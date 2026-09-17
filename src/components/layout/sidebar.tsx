@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { ChevronDown, ChevronLeft, Zap } from 'lucide-react';
+import { ChevronDown, ChevronLeft } from 'lucide-react';
 import { NAV_GROUPS } from './nav-config';
+import { LogoMark, Wordmark } from './wordmark';
 import { can, type Action, type Resource } from '@/lib/rbac';
 import { cn } from '@/lib/utils';
 import type { Role } from '@prisma/client';
@@ -52,10 +53,11 @@ export function Sidebar({
       )}
     >
       <div className="flex h-16 items-center gap-2.5 px-4">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-highlight">
-          <Zap className="h-4 w-4 text-highlight-foreground" />
-        </div>
-        {!collapsed && <span className="truncate font-bold tracking-tight">XCC CRM</span>}
+        {collapsed ? (
+          <LogoMark tone="light" size={26} className="mx-auto shrink-0" />
+        ) : (
+          <Wordmark tone="light" height={20} className="shrink-0" />
+        )}
         <button
           onClick={() => setCollapsed((c) => !c)}
           className="ml-auto hidden rounded-lg p-1 text-background/50 transition-colors hover:bg-background/10 hover:text-background lg:block"
