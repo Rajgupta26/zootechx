@@ -28,6 +28,11 @@ export interface QuickInvoiceInput {
   description?: string;
   sacCode?: string;
   gstRate?: number;
+  /**
+   * AUTO derives the treatment from geography and the client's own setting.
+   * EXEMPT charges no GST on this invoice alone and makes it a Bill of Supply.
+   */
+  taxTreatment?: 'AUTO' | 'EXEMPT';
   discount?: string | number;
   applyTds?: boolean;
   tdsRate?: number;
@@ -115,13 +120,19 @@ export async function createQuickInvoice(
   }
 
   // ---- 2. Resolve tax treatment from geography ----
+  // A choice made on this invoice beats the client's standing setting, which
+  // in turn beats geography. Someone ticking "without GST" on one bill means
+  // this bill, not every bill that client will ever get.
   const treatment: TaxTreatment = resolveTaxTreatment({
     companyStateCode: company.stateCode,
     companyCountry: company.country,
     clientStateCode: client.stateCode,
     clientCountry: client.country,
     exportUnderLut: company.exportUnderLut,
-    override: (client.taxTreatmentOverride as TaxTreatment | null) ?? null,
+    override:
+      input.taxTreatment === 'EXEMPT'
+        ? 'EXEMPT'
+        : ((client.taxTreatmentOverride as TaxTreatment | null) ?? null),
   });
 
   // ---- 3. Calculate ----

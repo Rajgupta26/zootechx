@@ -124,6 +124,23 @@ const TITLES = {
   CREDIT_NOTE: 'CREDIT NOTE',
 };
 
+/**
+ * What this document is called, which is not cosmetic.
+ *
+ * Under GST a registered supplier issues a *tax invoice* for a taxable supply
+ * and a *bill of supply* where no tax is charged — exempt and nil-rated
+ * supplies, and composition dealers. Heading a zero-tax document "TAX INVOICE"
+ * misstates it.
+ *
+ * Exports under LUT are the exception: also zero-tax, but still a tax invoice,
+ * carrying the LUT endorsement instead. So this keys off the treatment rather
+ * than off whether the tax happens to be zero.
+ */
+function documentTitle(data: InvoicePdfData): string {
+  if (data.kind === 'TAX_INVOICE' && data.taxTreatment === 'EXEMPT') return 'BILL OF SUPPLY';
+  return TITLES[data.kind];
+}
+
 const fmtDate = (d: Date) =>
   d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
@@ -138,14 +155,14 @@ export function InvoiceDocument({ data }: { data: InvoicePdfData }) {
   const money = (v: string) => `${sym} ${formatAmount(v, data.currency)}`;
 
   return (
-    <Document title={`${TITLES[data.kind]} ${data.number}`} author={data.company.legalName}>
+    <Document title={`${documentTitle(data)} ${data.number}`} author={data.company.legalName}>
       <Page size="A4" style={s.page}>
         <Letterhead company={data.company} />
 
         <View style={s.table}>
           {/* Title */}
           <View style={s.titleCell}>
-            <Text style={s.title}>{TITLES[data.kind]}</Text>
+            <Text style={s.title}>{documentTitle(data)}</Text>
           </View>
 
           {/* Bill To + invoice meta */}

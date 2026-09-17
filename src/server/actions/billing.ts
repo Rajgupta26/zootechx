@@ -68,6 +68,7 @@ export async function previewQuickInvoice(input: {
   currency?: 'INR' | 'USD';
   basis?: 'EXCLUSIVE' | 'INCLUSIVE';
   gstRate?: number;
+  taxTreatment?: 'AUTO' | 'EXEMPT';
   discount?: string;
   applyTds?: boolean;
 }): Promise<ActionResult<InvoicePreview>> {
@@ -85,7 +86,12 @@ export async function previewQuickInvoice(input: {
       clientStateCode: client?.stateCode,
       clientCountry: client?.country,
       exportUnderLut: company.exportUnderLut,
-      override: (client?.taxTreatmentOverride as TaxTreatment | null) ?? null,
+      // Same precedence as createQuickInvoice, so the preview cannot promise
+      // one number and the issued invoice carry another.
+      override:
+        input.taxTreatment === 'EXEMPT'
+          ? 'EXEMPT'
+          : ((client?.taxTreatmentOverride as TaxTreatment | null) ?? null),
     });
 
     const currency = input.currency ?? client?.currency ?? 'INR';
@@ -154,6 +160,7 @@ export async function createQuickInvoiceAction(
         basis: parsed.data.basis,
         description: parsed.data.description,
         gstRate: parsed.data.gstRate,
+        taxTreatment: parsed.data.taxTreatment,
         discount: parsed.data.discount,
         applyTds: parsed.data.applyTds,
         notes: parsed.data.notes,

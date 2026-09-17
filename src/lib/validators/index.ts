@@ -16,6 +16,10 @@ export const quickInvoiceSchema = z.object({
   amount: amountString,
   currency: z.enum(['INR', 'USD']).default('INR'),
   basis: z.enum(['EXCLUSIVE', 'INCLUSIVE']).default('EXCLUSIVE'),
+  /// AUTO derives the treatment from company and client geography.
+  /// EXEMPT charges no GST and issues a Bill of Supply instead of a tax
+  /// invoice, which is the correct document when no tax is levied.
+  taxTreatment: z.enum(['AUTO', 'EXEMPT']).default('AUTO'),
   description: z.string().max(500).optional(),
   gstRate: z.coerce.number().min(0).max(100).optional(),
   discount: z.string().optional(),

@@ -94,6 +94,9 @@ export function QuickInvoiceModal({
   // Optional overrides, collapsed by default.
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [basis, setBasis] = useState<'EXCLUSIVE' | 'INCLUSIVE'>('EXCLUSIVE');
+  // AUTO lets geography decide (CGST+SGST, IGST, or export). EXEMPT charges
+  // nothing on this invoice alone and issues a Bill of Supply.
+  const [taxTreatment, setTaxTreatment] = useState<'AUTO' | 'EXEMPT'>('AUTO');
   const [description, setDescription] = useState('');
   // undefined = inherit the client's TDS setting; a boolean is an explicit
   // override for this invoice only.
@@ -163,6 +166,7 @@ export function QuickInvoiceModal({
         clientName: clientName || undefined,
         amount,
         basis,
+        taxTreatment,
         applyTds,
       });
       if (res.ok && res.data) setPreview(res.data as Preview);
@@ -170,7 +174,7 @@ export function QuickInvoiceModal({
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [amount, clientId, clientName, basis, applyTds]);
+  }, [amount, clientId, clientName, basis, taxTreatment, applyTds]);
 
   const selectedClient = clients.find((c) => c.id === clientId);
   // What will actually happen: the explicit override if the user set one,
@@ -188,6 +192,7 @@ export function QuickInvoiceModal({
         amount,
         currency,
         basis,
+        taxTreatment,
         description: description || undefined,
         applyTds,
       });
@@ -300,13 +305,21 @@ export function QuickInvoiceModal({
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="qi-amount">Total amount</Label>
-                  <button
-                    type="button"
-                    onClick={() => setBasis((b) => (b === 'EXCLUSIVE' ? 'INCLUSIVE' : 'EXCLUSIVE'))}
-                    className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                  >
-                    {basis === 'EXCLUSIVE' ? 'Excluding GST' : 'Including GST'}
-                  </button>
+                  {/*
+                    Only meaningful when tax is being charged — with no GST
+                    there is nothing for the amount to include or exclude.
+                    Reworded from "Excluding GST" because that sat next to a
+                    "Without GST" button and read as the same choice twice.
+                  */}
+                  {taxTreatment === 'AUTO' && (
+                    <button
+                      type="button"
+                      onClick={() => setBasis((b) => (b === 'EXCLUSIVE' ? 'INCLUSIVE' : 'EXCLUSIVE'))}
+                      className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                    >
+                      {basis === 'EXCLUSIVE' ? 'Amount excludes tax' : 'Amount includes tax'}
+                    </button>
+                  )}
                 </div>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
@@ -322,6 +335,32 @@ export function QuickInvoiceModal({
                     autoFocus
                   />
                 </div>
+              </div>
+
+              {/* FIELD 3 — Tax */}
+              <div className="space-y-1.5">
+                <Label>Tax</Label>
+                <div className="grid grid-cols-2 gap-1 rounded-lg border bg-muted/40 p-1">
+                  <TaxChoice
+                    active={taxTreatment === 'AUTO'}
+                    onClick={() => setTaxTreatment('AUTO')}
+                    title="With GST"
+                    note="Tax invoice"
+                  />
+                  <TaxChoice
+                    active={taxTreatment === 'EXEMPT'}
+                    onClick={() => setTaxTreatment('EXEMPT')}
+                    title="Without GST"
+                    note="Bill of supply"
+                  />
+                </div>
+                {taxTreatment === 'EXEMPT' && (
+                  <p className="text-xs text-muted-foreground">
+                    No GST is charged and the PDF is headed{' '}
+                    <span className="font-medium text-foreground">Bill of Supply</span>, which is
+                    the correct document when no tax is levied. A taxable supply must carry GST.
+                  </p>
+                )}
               </div>
 
               {/* Live preview */}
@@ -548,6 +587,36 @@ export function QuickInvoiceModal({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * One half of the tax choice. A segmented pair rather than a checkbox: both
+ * options are legitimate documents, and neither is a modifier of the other.
+ */
+function TaxChoice({
+  active, onClick, title, note,
+}: {
+  active: boolean;
+  onClick: () => void;
+  title: string;
+  note: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        'rounded-md px-3 py-2 text-left transition-colors',
+        active ? 'bg-background shadow-sm' : 'hover:bg-background/60'
+      )}
+    >
+      <span className={cn('block text-sm', active ? 'font-medium' : 'text-muted-foreground')}>
+        {title}
+      </span>
+      <span className="block text-[11px] text-muted-foreground">{note}</span>
+    </button>
   );
 }
 
