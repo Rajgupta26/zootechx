@@ -37,6 +37,7 @@ export function NewLeadDialog({
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(autoOpen);
   const [duplicateId, setDuplicateId] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
 
   const [form, setForm] = useState({
     name: '', company: '', email: '', phone: '',
@@ -44,11 +45,17 @@ export function NewLeadDialog({
     requirement: '', city: '', ownerId: '',
   });
 
-  const set = (key: keyof typeof form) => (value: string) =>
+  const set = (key: keyof typeof form) => (value: string) => {
     setForm((f) => ({ ...f, [key]: value }));
+    // Clear the field's complaint as soon as it is being addressed.
+    setErrors((e) => (e[key] ? { ...e, [key]: [] } : e));
+  };
+
+  const err = (key: string) => errors[key]?.[0];
 
   const submit = () => {
     setDuplicateId(null);
+    setErrors({});
     startTransition(async () => {
       const res = await createLeadAction({
         ...form,
@@ -58,11 +65,20 @@ export function NewLeadDialog({
 
       if (!res.ok) {
         if (res.data?.duplicate) setDuplicateId(res.data.duplicate);
-        toast({ title: 'Could not create lead', description: res.error, variant: 'error' });
+        setErrors(res.fieldErrors ?? {});
+        // Name the problem in the toast too. "Check the highlighted fields" is
+        // no help when the toast is the only thing the reader is looking at.
+        const first = Object.values(res.fieldErrors ?? {}).flat()[0];
+        toast({
+          title: 'Could not create lead',
+          description: first ?? res.error,
+          variant: 'error',
+        });
         return;
       }
 
       toast({ title: 'Lead added', variant: 'success' });
+      setErrors({});
       setOpen(false);
       setForm({
         name: '', company: '', email: '', phone: '', source: 'WEBSITE',
@@ -102,7 +118,12 @@ export function NewLeadDialog({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="l-name">Contact name</Label>
-                <Input id="l-name" value={form.name} onChange={(e) => set('name')(e.target.value)} />
+                <Input
+                  id="l-name" value={form.name}
+                  onChange={(e) => set('name')(e.target.value)}
+                  aria-invalid={Boolean(err('name'))}
+                />
+                {err('name') && <p className="text-xs text-destructive">{err('name')}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="l-company">Company</Label>
@@ -110,11 +131,21 @@ export function NewLeadDialog({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="l-email">Email</Label>
-                <Input id="l-email" type="email" value={form.email} onChange={(e) => set('email')(e.target.value)} />
+                <Input
+                  id="l-email" type="email" value={form.email}
+                  onChange={(e) => set('email')(e.target.value)}
+                  aria-invalid={Boolean(err('email'))}
+                />
+                {err('email') && <p className="text-xs text-destructive">{err('email')}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="l-phone">Phone</Label>
-                <Input id="l-phone" value={form.phone} onChange={(e) => set('phone')(e.target.value)} />
+                <Input
+                  id="l-phone" value={form.phone}
+                  onChange={(e) => set('phone')(e.target.value)}
+                  aria-invalid={Boolean(err('phone'))}
+                />
+                {err('phone') && <p className="text-xs text-destructive">{err('phone')}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label>Source</Label>

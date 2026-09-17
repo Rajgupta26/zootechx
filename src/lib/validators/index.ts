@@ -66,7 +66,7 @@ export const recurringInvoiceSchema = z.object({
 export const leadBaseSchema = z.object({
   name: z.string().min(2, 'Name is required').max(120),
   company: z.string().max(160).optional(),
-  email: z.string().email('Enter a valid email').optional().or(z.literal('')),
+  email: z.string().email('Enter a full email address, like name@company.com').optional().or(z.literal('')),
   phone: z.string().max(24).optional(),
   source: z.enum(['WEBSITE', 'REFERRAL', 'META_ADS', 'GOOGLE_ADS', 'LINKEDIN', 'COLD_OUTREACH', 'EVENT', 'WHATSAPP', 'OTHER']).default('OTHER'),
   sourceDetail: z.string().max(160).optional(),
@@ -95,7 +95,7 @@ export const clientSchema = z.object({
   legalName: z.string().max(200).optional(),
   gstin: z.string().max(15).optional().or(z.literal('')),
   pan: z.string().max(10).optional(),
-  email: z.string().email('Enter a valid email'),
+  email: z.string().email('Enter a full email address, like name@company.com'),
   phone: z.string().max(24).optional(),
   website: z.string().url().optional().or(z.literal('')),
   addressLine1: z.string().max(200).optional(),
@@ -146,7 +146,7 @@ export const sowSignSchema = z
   .object({
     token: z.string().min(1),
     signerName: z.string().min(2, 'Enter your full name').max(120),
-    signerEmail: z.string().email('Enter a valid email'),
+    signerEmail: z.string().email('Enter a full email address, like name@company.com'),
     signerTitle: z.string().max(120).optional(),
     signature: z.string().min(2, 'Type your name to sign'),
     consent: z.literal(true, {
