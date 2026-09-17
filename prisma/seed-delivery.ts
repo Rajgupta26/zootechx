@@ -416,6 +416,13 @@ export async function seedDelivery(prisma: typeof PrismaSingleton, ctx: Ctx) {
   }
 
   // ---------- Vault ----------
+  //
+  // These secrets are invented, and they deliberately do not look like real
+  // ones. They used to be shaped as `sk_live_…`, `rzp_live_…` and `SG.…`, which
+  // is realistic demo data and also a permanent nuisance: GitHub's push
+  // protection rejects the whole repository over them, and so will every other
+  // secret scanner anyone points at it afterwards. A fixture that cries wolf on
+  // every scan teaches people to wave scanners through.
   console.log('   Credentials vault (AES-256-GCM)…');
   const credentialSeeds = [
     { name: 'Razorpay — Production', category: 'payment_gateway', env: 'production', secret: 'EXAMPLE-ONLY-razorpay-secret', sensitivity: 'CRITICAL' as const, username: 'EXAMPLE-ONLY-razorpay-key-id', url: 'https://dashboard.razorpay.com' },
