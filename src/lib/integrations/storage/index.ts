@@ -1,7 +1,7 @@
-import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { StorageProvider, StoredObject } from '../types';
+import { signObjectKey } from './signing';
 
 /**
  * Object storage for invoice PDFs, proposals and client attachments.
@@ -45,9 +45,8 @@ class LocalStorageProvider implements StorageProvider {
 
   async signedUrl(key: string, expiresInSeconds = 3600): Promise<string> {
     const expires = Date.now() + expiresInSeconds * 1000;
-    const secret = process.env.AUTH_SECRET ?? 'dev-secret';
-    const sig = crypto.createHmac('sha256', secret).update(`${key}:${expires}`).digest('hex');
     const base = process.env.NEXT_PUBLIC_APP_URL ?? '';
+    const sig = signObjectKey(key, expires);
     return `${base}/api/files/${encodeURIComponent(key)}?expires=${expires}&sig=${sig}`;
   }
 

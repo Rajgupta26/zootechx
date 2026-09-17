@@ -1,7 +1,9 @@
-import crypto from 'node:crypto';
 import { NextResponse, type NextRequest } from 'next/server';
-import { getCurrentUser } from '@/lib/session';
+import { prisma } from '@/lib/db';
+import { getCurrentUser, type CurrentUser } from '@/lib/session';
+import { can, scopeFilter } from '@/lib/rbac';
 import { getStorageProvider } from '@/lib/integrations/storage';
+import { verifyObjectSignature } from '@/lib/integrations/storage/signing';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,8 +16,15 @@ const CONTENT_TYPES: Record<string, string> = {
 /**
  * Serve a stored object.
  *
- * Two ways in: a signed URL (used by WhatsApp, which fetches the document
- * anonymously), or an authenticated session. Anything else is refused.
+ * Two ways in: a signed link — which is how a client receives an invoice over
+ * email or WhatsApp, with no session — or a session that can read the record
+ * the object belongs to.
+ *
+ * That second check is the point. It used to be "is anyone signed in", and
+ * object keys are derived from the invoice number, so they run in sequence:
+ * invoices/2026/09/XCC_26-27_0007.pdf, then 0008, then 0009. Anyone with a
+ * login could walk the whole range and collect every invoice and signed
+ * contract in the business, including from pages their role is refused.
  */
 export async function GET(
   req: NextRequest,
@@ -24,28 +33,18 @@ export async function GET(
   const { key: rawKey } = await params;
   const key = decodeURIComponent(rawKey);
 
-  const expires = req.nextUrl.searchParams.get('expires');
-  const sig = req.nextUrl.searchParams.get('sig');
+  const signed = verifyObjectSignature(
+    key,
+    req.nextUrl.searchParams.get('expires'),
+    req.nextUrl.searchParams.get('sig')
+  );
 
-  let authorised = false;
-
-  if (expires && sig) {
-    const expiry = Number(expires);
-    if (Number.isFinite(expiry) && expiry > Date.now()) {
-      const secret = process.env.AUTH_SECRET ?? 'dev-secret';
-      const expected = crypto.createHmac('sha256', secret).update(`${key}:${expires}`).digest('hex');
-      const a = Buffer.from(sig);
-      const b = Buffer.from(expected);
-      authorised = a.length === b.length && crypto.timingSafeEqual(a, b);
+  if (!signed) {
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await mayRead(user, key))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-  }
-
-  if (!authorised) {
-    authorised = Boolean(await getCurrentUser());
-  }
-
-  if (!authorised) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
@@ -62,4 +61,34 @@ export async function GET(
   } catch {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
+}
+
+/**
+ * Resolve the object back to the record that owns it and apply that record's
+ * own rules — the same permission and the same scope filter the list pages
+ * use, so a client sees their own invoice and nobody else's.
+ *
+ * An unrecognised prefix is refused rather than served: a new kind of stored
+ * object should have to opt in here, not inherit access by default.
+ */
+async function mayRead(user: CurrentUser, key: string): Promise<boolean> {
+  if (key.startsWith('invoices/')) {
+    if (!can(user, 'invoice', 'read')) return false;
+    const found = await prisma.invoice.findFirst({
+      where: { pdfKey: key, ...scopeFilter(user, 'invoice') },
+      select: { id: true },
+    });
+    return Boolean(found);
+  }
+
+  if (key.startsWith('proposals/')) {
+    if (!can(user, 'sow', 'read')) return false;
+    const found = await prisma.sow.findFirst({
+      where: { signedPdfKey: key, ...scopeFilter(user, 'sow') },
+      select: { id: true },
+    });
+    return Boolean(found);
+  }
+
+  return false;
 }

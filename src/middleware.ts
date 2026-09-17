@@ -4,8 +4,18 @@ import { authConfig } from '@/lib/auth.config';
 
 const { auth } = NextAuth(authConfig);
 
-/** Routes reachable without a session. */
-const PUBLIC_PREFIXES = ['/login', '/sign', '/pay', '/api/webhooks', '/api/cron', '/api/auth'];
+/**
+ * Routes reachable without a session.
+ *
+ * /api/files is here because a client opens an invoice from an email or a
+ * WhatsApp message, holding a signed link and no session — the middleware was
+ * bouncing those to /login, so that delivery path never worked. The route
+ * itself is not open: it verifies the signature, and without one it requires a
+ * session that can read the record the object belongs to.
+ */
+const PUBLIC_PREFIXES = [
+  '/login', '/sign', '/pay', '/api/webhooks', '/api/cron', '/api/auth', '/api/files',
+];
 
 /** Route prefixes the CLIENT role may reach. Everything else is staff-only. */
 const CLIENT_ALLOWED = ['/portal', '/api/portal'];
