@@ -399,7 +399,27 @@ export async function completeFollowUpAction(
 
 // ---------- Projects & delivery ----------
 
-export async function createProjectAction(raw: unknown): Promise<ActionResult<{ id: string }>> {
+/**
+ * Pick a project code that is actually free.
+ *
+ * Counting rows and adding one is not enough: seeded and hand-entered codes
+ * (GRN-D2C, MER-DATA) do not follow the sequence, so the count can land on a
+ * number already taken and the unique constraint would surface to the user as
+ * a raw Prisma error.
+ */
+async function nextProjectCode(): Promise<string> {
+  const count = await prisma.project.count();
+  for (let n = count + 1; n < count + 1000; n += 1) {
+    const code = `PRJ-${String(n).padStart(4, '0')}`;
+    const taken = await prisma.project.findUnique({ where: { code }, select: { id: true } });
+    if (!taken) return code;
+  }
+  return `PRJ-${Date.now()}`;
+}
+
+export async function createProjectAction(
+  raw: unknown
+): Promise<ActionResult<{ id: string; code: string; milestonesCopied: number }>> {
   try {
     const parsed = projectSchema.safeParse(raw);
     if (!parsed.success) {
@@ -408,15 +428,76 @@ export async function createProjectAction(raw: unknown): Promise<ActionResult<{ 
 
     const user = await requirePermission('project', 'create');
     const d = parsed.data;
-    const count = await prisma.project.count();
+
+    const client = await prisma.client.findFirst({
+      where: { id: d.clientId, deletedAt: null },
+      select: { id: true, name: true },
+    });
+    if (!client) {
+      return {
+        ok: false,
+        error: 'Check the highlighted fields.',
+        fieldErrors: { clientId: ['That client no longer exists.'] },
+      };
+    }
+
+    /**
+     * A proposal may only start delivery for the client who signed it.
+     * The id arrives in a request body, so without this check any proposal
+     * could be attached to any client's project — and its payment milestones
+     * copied across with it.
+     */
+    const sow = d.sowId
+      ? await prisma.sow.findUnique({
+          where: { id: d.sowId },
+          select: {
+            id: true, clientId: true, number: true,
+            milestones: { orderBy: { position: 'asc' } },
+          },
+        })
+      : null;
+
+    if (d.sowId && !sow) {
+      return {
+        ok: false,
+        error: 'Check the highlighted fields.',
+        fieldErrors: { sowId: ['That proposal no longer exists.'] },
+      };
+    }
+    if (sow && sow.clientId !== d.clientId) {
+      return {
+        ok: false,
+        error: 'Check the highlighted fields.',
+        fieldErrors: { sowId: [`That proposal belongs to a different client.`] },
+      };
+    }
+
+    let code = d.code?.trim() || '';
+    if (code) {
+      const taken = await prisma.project.findUnique({ where: { code }, select: { id: true } });
+      if (taken) {
+        return {
+          ok: false,
+          error: 'Check the highlighted fields.',
+          fieldErrors: { code: ['Another project already uses this code.'] },
+        };
+      }
+    } else {
+      code = await nextProjectCode();
+    }
+
+    // The signed payment schedule becomes the delivery schedule. Progress is
+    // derived from milestone completion, so a project created with none would
+    // sit at 0% no matter how much work was finished.
+    const copied = sow?.milestones ?? [];
 
     const project = await prisma.project.create({
       data: {
-        code: d.code || `PRJ-${String(count + 1).padStart(4, '0')}`,
+        code,
         name: d.name,
         description: d.description,
         clientId: d.clientId,
-        sowId: d.sowId || null,
+        sowId: sow?.id ?? null,
         status: d.status,
         priority: d.priority,
         leadDevId: d.leadDevId || null,
@@ -424,17 +505,32 @@ export async function createProjectAction(raw: unknown): Promise<ActionResult<{ 
         targetEndDate: d.targetEndDate ? new Date(d.targetEndDate) : null,
         budgetHours: d.budgetHours ? d.budgetHours.replace(/[,\s]/g, '') : null,
         members: d.leadDevId ? { create: [{ userId: d.leadDevId, roleLabel: 'Tech Lead' }] } : undefined,
+        milestones: copied.length
+          ? {
+              create: copied.map((m, i) => ({
+                title: m.title,
+                description: m.description,
+                dueDate: m.dueDate,
+                position: m.position ?? i,
+                billableAmount: m.amount,
+              })),
+            }
+          : undefined,
       },
     });
 
     await audit({
       actorId: user.id, actorEmail: user.email, actorRole: user.role,
       action: 'project.create', entity: 'project', entityId: project.id,
-      summary: `Created project ${project.code} — ${project.name}`,
+      summary: sow
+        ? `Created project ${project.code} — ${project.name}, from proposal ${sow.number}`
+        : `Created project ${project.code} — ${project.name}`,
     });
 
     revalidatePath('/projects');
-    return { ok: true, data: { id: project.id } };
+    if (sow) revalidatePath(`/sows/${sow.id}`);
+
+    return { ok: true, data: { id: project.id, code: project.code, milestonesCopied: copied.length } };
   } catch (err) {
     return fail(err);
   }

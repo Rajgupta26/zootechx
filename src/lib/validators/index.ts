@@ -50,7 +50,7 @@ export const creditNoteSchema = z.object({
 });
 
 export const recurringInvoiceSchema = z.object({
-  clientId: z.string().min(1, 'Client is required'),
+  clientId: z.string({ required_error: 'Client is required' }).min(1, 'Client is required'),
   title: z.string().min(2).max(160),
   amount: amountString,
   currency: z.enum(['INR', 'USD']).default('INR'),
@@ -125,7 +125,7 @@ export const followUpSchema = z.object({
 
 export const sowSchema = z.object({
   title: z.string().min(3).max(200),
-  clientId: z.string().min(1, 'Client is required'),
+  clientId: z.string({ required_error: 'Client is required' }).min(1, 'Client is required'),
   scope: z.string().min(10, 'Describe the scope'),
   deliverables: z.string().optional(),
   assumptions: z.string().optional(),
@@ -164,9 +164,9 @@ export const sowSignSchema = z
 // ---------- Delivery ----------
 
 export const projectSchema = z.object({
-  name: z.string().min(2).max(160),
+  name: z.string().min(2, 'Give the project a name').max(160),
   code: z.string().min(2).max(24).optional(),
-  clientId: z.string().min(1, 'Client is required'),
+  clientId: z.string({ required_error: 'Client is required' }).min(1, 'Client is required'),
   sowId: z.string().optional(),
   description: z.string().max(2000).optional(),
   status: z.enum(['PLANNING', 'IN_PROGRESS', 'ON_HOLD', 'QA', 'DELIVERED', 'CLOSED', 'CANCELLED']).default('PLANNING'),

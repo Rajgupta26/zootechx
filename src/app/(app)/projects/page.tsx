@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { FolderKanban } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { requirePagePermission } from '@/lib/session';
-import { scopeFilter } from '@/lib/rbac';
+import { scopeFilter, can } from '@/lib/rbac';
 import { PageHeader } from '@/components/layout/app-shell';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -12,20 +12,24 @@ import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Pagination } from '@/components/ui/pagination';
 import { formatDate, paginate, pageCount } from '@/lib/utils';
+import { NewProjectDialog } from './new-project';
 
 export const metadata: Metadata = { title: 'Projects' };
 
 export default async function ProjectsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; new?: string; sow?: string }>;
 }) {
   const user = await requirePagePermission('project', 'read');
   const params = await searchParams;
   const { skip, take, page } = paginate(params.page);
   const where = scopeFilter(user, 'project');
 
-  const [projects, total] = await Promise.all([
+  // Only two roles can create, so the pickers are only worth loading for them.
+  const mayCreate = can(user, 'project', 'create');
+
+  const [projects, total, clients, leads, sows] = await Promise.all([
     prisma.project.findMany({
       where,
       orderBy: [{ status: 'asc' }, { targetEndDate: 'asc' }],
@@ -44,6 +48,30 @@ export default async function ProjectsPage({
       },
     }),
     prisma.project.count({ where }),
+    mayCreate
+      ? prisma.client.findMany({
+          where: { deletedAt: null },
+          select: { id: true, name: true },
+          orderBy: { name: 'asc' },
+        })
+      : Promise.resolve([]),
+    mayCreate
+      ? prisma.user.findMany({
+          where: { role: { in: ['DEVELOPER', 'SUB_ADMIN', 'SUPER_ADMIN'] }, status: 'ACTIVE', deletedAt: null },
+          select: { id: true, name: true },
+          orderBy: { name: 'asc' },
+        })
+      : Promise.resolve([]),
+    mayCreate
+      ? prisma.sow.findMany({
+          where: { status: 'SIGNED' },
+          select: {
+            id: true, number: true, title: true, clientId: true,
+            _count: { select: { milestones: true } },
+          },
+          orderBy: { signedAt: 'desc' },
+        })
+      : Promise.resolve([]),
   ]);
 
   return (
@@ -51,6 +79,20 @@ export default async function ProjectsPage({
       <PageHeader
         title="Projects"
         subtitle="Delivery status, milestones and open issues. Progress is derived from milestone completion."
+        action={
+          mayCreate ? (
+            <NewProjectDialog
+              clients={clients}
+              leads={leads}
+              sows={sows.map((s) => ({
+                id: s.id, number: s.number, title: s.title,
+                clientId: s.clientId, milestoneCount: s._count.milestones,
+              }))}
+              autoOpen={params.new === '1'}
+              fromSowId={params.sow}
+            />
+          ) : undefined
+        }
       />
 
       {projects.length === 0 ? (
@@ -61,7 +103,9 @@ export default async function ProjectsPage({
             description={
               user.role === 'DEVELOPER'
                 ? 'You are not assigned to any projects yet.'
-                : 'Create a project from a signed statement of work.'
+                : mayCreate
+                  ? 'Start one from a signed proposal, or create a standalone project.'
+                  : 'Nothing in delivery yet.'
             }
           />
         </Card>

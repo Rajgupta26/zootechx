@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Download, FileCheck2, Link2, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Download, FileCheck2, FolderKanban, Link2, Rocket, ShieldCheck } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { requirePagePermission } from '@/lib/session';
 import { scopeFilter, can } from '@/lib/rbac';
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/misc';
 import { formatMoney } from '@/lib/billing/money';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { SowActions } from './sow-actions';
@@ -39,6 +40,14 @@ export default async function SowDetail({ params }: { params: Promise<{ id: stri
   const activeLink = sow.shareLinks.find(
     (l) => !l.revokedAt && l.expiresAt > new Date()
   );
+
+  /**
+   * Delivery starts once, from a signed proposal. Offering the button again
+   * after a project exists is how you end up with two projects billing the
+   * same schedule, so it becomes a link to the one already running.
+   */
+  const canStartProject =
+    sow.status === 'SIGNED' && sow.projects.length === 0 && can(user, 'project', 'create');
   const base = process.env.NEXT_PUBLIC_APP_URL ?? '';
 
   return (
@@ -72,6 +81,15 @@ export default async function SowDetail({ params }: { params: Promise<{ id: stri
             {sow.signature ? 'Signed PDF' : 'PDF'}
           </a>
         </Button>
+
+        {canStartProject && (
+          <Button asChild>
+            <Link href={`/projects?new=1&sow=${sow.id}`}>
+              <Rocket />
+              Start project
+            </Link>
+          </Button>
+        )}
 
         <SowActions
           sowId={sow.id}
@@ -126,6 +144,33 @@ export default async function SowDetail({ params }: { params: Promise<{ id: stri
         </div>
 
         <div className="space-y-4">
+          {sow.projects.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <FolderKanban className="h-4 w-4" />
+                  Delivery
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 pt-0">
+                {sow.projects.map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`/projects/${p.id}`}
+                    className="block rounded-md border p-2.5 transition-colors hover:bg-accent/50"
+                  >
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                      <span className="min-w-0 truncate text-sm font-medium">{p.name}</span>
+                      <StatusBadge status={p.status} />
+                    </div>
+                    <Progress value={p.progressPct} className="h-1.5" />
+                    <p className="mt-1 text-xs text-muted-foreground tabular">{p.progressPct}% complete</p>
+                  </Link>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
           {sow.signature ? (
             <Card className="border-success/40">
               <CardHeader className="pb-3">
