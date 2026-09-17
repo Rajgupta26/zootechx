@@ -5,6 +5,7 @@ import type { Role } from '@prisma/client';
 import { auth } from './auth';
 import { prisma } from './db';
 import { type Action, type Actor, type Resource, can, hasRecordGrant } from './rbac';
+import { INVALIDATE_SESSION_URL } from './auth-routes';
 
 /**
  * Server-side session helpers.
@@ -73,9 +74,10 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 
 /**
  * Route that clears a session cookie whose user can no longer be resolved.
- * See src/app/api/auth/invalidate/route.ts for why bouncing to /login loops.
+ * Defined in auth-routes.ts because the notification bell needs it too, and a
+ * client component cannot import this file.
  */
-export const INVALIDATE_SESSION_URL = '/api/auth/invalidate';
+export { INVALIDATE_SESSION_URL } from './auth-routes';
 
 /**
  * Redirects when there is no usable session.

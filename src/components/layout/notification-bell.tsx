@@ -8,6 +8,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { relativeTime, cn } from '@/lib/utils';
+import { INVALIDATE_SESSION_URL } from '@/lib/auth-routes';
 
 interface NotificationItem {
   id: string;
@@ -28,22 +29,50 @@ export function NotificationBell() {
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
 
-  const load = useCallback(async () => {
+  /**
+   * Returns false when the session is gone, so the caller can stop polling.
+   *
+   * A 401 here used to be swallowed like any other failure. A tab left open
+   * after the session expired would then poll every 30 seconds for as long as
+   * it stayed open — a few thousand refused requests a day — while still
+   * showing a bell, a name and a menu, as though someone were signed in.
+   */
+  const load = useCallback(async (): Promise<boolean> => {
     try {
       const res = await fetch('/api/notifications', { cache: 'no-store' });
-      if (!res.ok) return;
+      if (res.status === 401) return false;
+      if (!res.ok) return true;
       const data = (await res.json()) as { items: NotificationItem[]; unread: number };
       setItems(data.items);
       setUnread(data.unread);
+      return true;
     } catch {
       /* offline — try again on the next tick */
+      return true;
     }
   }, []);
 
   useEffect(() => {
-    load();
-    const id = setInterval(load, 30_000);
-    return () => clearInterval(id);
+    let cancelled = false;
+
+    // Send the reader down the same path every other expired session takes:
+    // the invalidate route clears the cookie and lands on /login?expired=1,
+    // which explains itself. Anything less leaves them clicking a dead UI.
+    const tick = async () => {
+      const alive = await load();
+      if (!alive && !cancelled) {
+        cancelled = true;
+        clearInterval(id);
+        window.location.href = INVALIDATE_SESSION_URL;
+      }
+    };
+
+    void tick();
+    const id = setInterval(tick, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, [load]);
 
   const markAllRead = async () => {

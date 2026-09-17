@@ -20,8 +20,25 @@ const PUBLIC_PREFIXES = [
   '/api/health',
 ];
 
-/** Route prefixes the CLIENT role may reach. Everything else is staff-only. */
-const CLIENT_ALLOWED = ['/portal', '/api/portal'];
+/**
+ * Route prefixes the CLIENT role may reach. Everything else is staff-only.
+ *
+ * The two PDF routes are here because the portal links straight to them —
+ * "Download PDF" on an invoice and on a signed proposal. Fencing the whole of
+ * /api off from clients bounced those links to /portal, so the only download
+ * the portal offers had never worked.
+ *
+ * Opening them is safe because neither route trusts the middleware: both
+ * require the matching read permission and then apply `scopeFilter`, which for
+ * a CLIENT resolves to `{ clientId: <their own> }`. A client asking for
+ * another client's invoice gets a 404, not a PDF.
+ */
+const CLIENT_ALLOWED = [
+  '/portal',
+  '/api/portal',
+  '/api/invoices',
+  '/api/sows',
+];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
