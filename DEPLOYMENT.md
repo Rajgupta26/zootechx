@@ -123,12 +123,30 @@ with a missing `AUTH_SECRET`, a `VAULT_MASTER_KEY` that is not 32 bytes, a
 Point the host's health check at `/api/health`. It touches the database and
 answers 503 when it cannot, which a TCP check does not.
 
-### 7. Schedule the daily job
+### 7. Schedule the jobs
 
-`GET /api/cron/daily` with `Authorization: Bearer $CRON_SECRET`, once a day,
-early morning IST. It sets overdue flags, sends dunning reminders and follow-up
-nudges, and issues recurring retainer invoices. Without `CRON_SECRET` the
-endpoint answers 401 to everything and none of that happens.
+`vercel.json` registers one cron: `/api/cron/daily` at 01:30. It sets overdue
+flags, sends dunning reminders and follow-up nudges, issues recurring retainer
+invoices, and drains the outbound queue. Without `CRON_SECRET` the endpoint
+answers 401 to everything and none of that happens.
+
+**Why only one.** Vercel's Hobby plan allows each cron at most one run per day —
+a `*/5 * * * *` entry is rejected at deploy time with "Hobby accounts are
+limited to daily cron jobs". The outbound queue wants draining far more often
+than daily, so the daily job drains it as well.
+
+That is enough because sending an invoice already delivers inline: the queue
+only holds messages whose first attempt failed. But waiting until 01:30 to
+retry a bounced invoice is not a real delivery story, so for prompt retries
+schedule `/api/cron/dispatch` every few minutes from anywhere that can run a
+timer:
+
+- `.github/workflows/dispatch-queue.yml` ships ready — add `APP_URL` and
+  `CRON_SECRET` as repository secrets and it runs every ten minutes, free.
+  GitHub's scheduler is best-effort and often late, which is fine for retries.
+- Or cron-job.org, EasyCron, or a crontab on any machine you already run.
+- Or upgrade to Vercel Pro, which lifts the daily limit, and put the `*/5`
+  entry back in `vercel.json`.
 
 ### 8. Check before you open it up
 
