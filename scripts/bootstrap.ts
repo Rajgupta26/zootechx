@@ -12,11 +12,11 @@
  * up in shell history and in the process list.
  */
 
-import { createInterface } from 'node:readline/promises';
-import { stdin, stdout } from 'node:process';
+import { stdin } from 'node:process';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../src/lib/db';
 import { audit } from '../src/lib/audit';
+import { ask, hidden } from './prompt';
 
 const BCRYPT_COST = 12;
 export const MIN_PASSWORD_LENGTH = 12;
@@ -109,20 +109,6 @@ function target(): string {
   }
 }
 
-/** Reads a line without echoing it, so a shoulder is not a threat model. */
-async function secret(prompt: string): Promise<string> {
-  const rl = createInterface({ input: stdin, output: stdout, terminal: true });
-  const asked = rl.question(prompt);
-  const iface = rl as unknown as { _writeToOutput: (s: string) => void };
-  iface._writeToOutput = (s: string) => {
-    if (s.includes(prompt)) stdout.write(prompt);
-  };
-  const value = await asked;
-  rl.close();
-  stdout.write('\n');
-  return value;
-}
-
 async function main(): Promise<void> {
   // Without a terminal the prompts resolve to nothing and the script would
   // exit 0 having created no account — success by every outward sign.
@@ -137,18 +123,11 @@ async function main(): Promise<void> {
 
   console.log(`\nCreating the first administrator.\nDatabase: ${target()}\n`);
 
-  const rl = createInterface({ input: stdin, output: stdout });
-  let name: string;
-  let email: string;
-  try {
-    name = await rl.question('Full name: ');
-    email = await rl.question('Email: ');
-  } finally {
-    rl.close();
-  }
+  const name = await ask('Full name: ');
+  const email = await ask('Email: ');
 
-  const password = await secret(`Password (${MIN_PASSWORD_LENGTH}+ characters): `);
-  if ((await secret('Type it again: ')) !== password) {
+  const password = await hidden(`Password (${MIN_PASSWORD_LENGTH}+ characters, not shown): `);
+  if ((await hidden('Type it again: ')) !== password) {
     console.error('\n✖ They do not match. Nothing was created.\n');
     process.exitCode = 1;
     return;

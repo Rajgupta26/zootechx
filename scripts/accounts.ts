@@ -13,10 +13,9 @@
  * shell history or a process list.
  */
 
-import { createInterface } from 'node:readline/promises';
-import { stdin, stdout } from 'node:process';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../src/lib/db';
+import { ask, hidden } from './prompt';
 
 const DEMO_PASSWORD = 'password123';
 const BCRYPT_COST = 12;
@@ -71,10 +70,9 @@ async function audit(): Promise<void> {
 }
 
 async function setPassword(): Promise<void> {
-  const rl = createInterface({ input: stdin, output: stdout });
-  try {
+  {
     console.log(`\nDatabase: ${where()}\n`);
-    const email = (await rl.question('Email: ')).trim().toLowerCase();
+    const email = (await ask('Email: ')).toLowerCase();
 
     const user = await prisma.user.findFirst({
       where: { email, deletedAt: null },
@@ -86,7 +84,7 @@ async function setPassword(): Promise<void> {
       return;
     }
 
-    const password = await rl.question(`New password for ${user.name} (${user.role}): `);
+    const password = await hidden(`New password for ${user.name} (${user.role}, not shown): `);
     if (password.length < 12) {
       console.error('\n✖ Use at least 12 characters. This account can read every client contract.\n');
       process.exitCode = 1;
@@ -97,7 +95,7 @@ async function setPassword(): Promise<void> {
       process.exitCode = 1;
       return;
     }
-    if ((await rl.question('Type it again: ')) !== password) {
+    if ((await hidden('Type it again: ')) !== password) {
       console.error('\n✖ They do not match. Nothing changed.\n');
       process.exitCode = 1;
       return;
@@ -110,8 +108,6 @@ async function setPassword(): Promise<void> {
     });
 
     console.log(`\n✓ Password set for ${email}.\n`);
-  } finally {
-    rl.close();
   }
 }
 

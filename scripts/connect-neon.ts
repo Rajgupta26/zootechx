@@ -21,25 +21,11 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 import { PrismaClient } from '@prisma/client';
+import { hidden } from './prompt';
 
 const ENV_FILE = path.join(process.cwd(), '.env');
-
-/** Reads a line without echoing it. */
-async function secret(prompt: string): Promise<string> {
-  const rl = createInterface({ input: stdin, output: stdout, terminal: true });
-  const asked = rl.question(prompt);
-  const iface = rl as unknown as { _writeToOutput: (s: string) => void };
-  iface._writeToOutput = (s: string) => {
-    if (s.includes(prompt)) stdout.write(prompt);
-  };
-  const value = await asked;
-  rl.close();
-  stdout.write('\n');
-  return value.trim();
-}
 
 /** Everything about a connection string except the part that is a secret. */
 function safe(raw: string): string {
@@ -113,7 +99,7 @@ async function main(): Promise<void> {
       '  Nothing you paste is printed back or written to your shell history.\n'
   );
 
-  const pasted = await secret('Pooled connection string: ');
+  const pasted = await hidden('Pooled connection string: ');
 
   let pooled: string;
   try {
@@ -162,7 +148,7 @@ async function main(): Promise<void> {
         '  documents — but your project may name it differently. Go back to the\n' +
         '  dashboard, turn Connection pooling OFF, and copy that string.\n'
     );
-    const pastedDirect = await secret('  Direct connection string: ');
+    const pastedDirect = await hidden('  Direct connection string: ');
     try {
       direct = tidy(pastedDirect);
     } catch {
