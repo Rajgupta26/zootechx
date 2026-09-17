@@ -50,11 +50,18 @@ const TREATMENT_COPY: Record<string, string> = {
   EXEMPT: 'Exempt supply',
 };
 
-export function QuickInvoiceButton() {
+/**
+ * Opens the invoice modal directly, with no menu in between.
+ *
+ * Used where the surrounding copy has already said this is about invoicing —
+ * offering "Quick action" there would ask the reader to choose again after
+ * they have chosen.
+ */
+export function QuickInvoiceButton({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button size="sm" onClick={() => setOpen(true)} className="hidden sm:inline-flex">
+      <Button size="sm" onClick={() => setOpen(true)} className={cn('hidden sm:inline-flex', className)}>
         <Plus />
         Quick invoice
       </Button>

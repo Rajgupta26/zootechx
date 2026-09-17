@@ -10,7 +10,7 @@ import { CapsuleChart } from '@/components/dashboard/capsule-chart';
 import { BatteryStat } from '@/components/dashboard/battery-stat';
 import { DepartmentPanels } from '@/components/dashboard/department-panels';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { QuickActions } from '@/components/layout/quick-actions';
+import { QuickInvoiceButton } from '@/components/billing/quick-invoice-modal';
 import { formatMoney } from '@/lib/billing/money';
 import { formatDate, cn } from '@/lib/utils';
 import type { getAdminDashboard, getDepartmentPanels } from '@/lib/queries/dashboard';
@@ -134,7 +134,6 @@ function Hero({
         <span className="rounded-full bg-muted px-4 py-2 text-sm font-medium text-muted-foreground">
           FY {data.fyLabel}
         </span>
-        <QuickActions role={role as never} grants={grants} />
       </div>
     </div>
   );
@@ -243,7 +242,7 @@ function BillingCta({
       </div>
 
       <div className="mt-6 flex items-center justify-between gap-3">
-        <QuickActions role={role as never} grants={grants} variant="onDark" />
+        <QuickInvoiceButton className="bg-background text-foreground hover:bg-background/90" />
         {expenses !== null && (
           <Link
             href="/expenses"
