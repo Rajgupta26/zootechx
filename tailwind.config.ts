@@ -26,6 +26,7 @@ const config: Config = {
         warning: { DEFAULT: 'hsl(var(--warning))', foreground: 'hsl(var(--warning-foreground))' },
         highlight: { DEFAULT: 'hsl(var(--highlight))', foreground: 'hsl(var(--highlight-foreground))' },
         canvas: 'hsl(var(--canvas))',
+        rail: { DEFAULT: 'hsl(var(--rail))', foreground: 'hsl(var(--rail-foreground))' },
       },
       borderRadius: {
         card: 'var(--radius-card)',

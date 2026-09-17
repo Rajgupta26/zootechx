@@ -48,7 +48,7 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        'flex h-full shrink-0 flex-col overflow-hidden bg-foreground text-background transition-[width] duration-200 lg:rounded-card',
+        'flex h-full shrink-0 flex-col overflow-hidden bg-rail text-rail-foreground transition-[width] duration-200 lg:rounded-card',
         collapsed ? 'w-[68px]' : 'w-60'
       )}
     >
@@ -60,7 +60,7 @@ export function Sidebar({
         )}
         <button
           onClick={() => setCollapsed((c) => !c)}
-          className="ml-auto hidden rounded-lg p-1 text-background/50 transition-colors hover:bg-background/10 hover:text-background lg:block"
+          className="ml-auto hidden rounded-lg p-1 text-rail-foreground/50 transition-colors hover:bg-rail-foreground/10 hover:text-rail-foreground lg:block"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <ChevronLeft className={cn('h-4 w-4 transition-transform', collapsed && 'rotate-180')} />
@@ -111,7 +111,7 @@ export function Sidebar({
                 </button>
 
                 {open && (
-                  <ul className="ml-[1.4rem] mt-0.5 space-y-0.5 border-l border-background/15 pl-2.5">
+                  <ul className="ml-[1.4rem] mt-0.5 space-y-0.5 border-l border-rail-foreground/15 pl-2.5">
                     {group.children.map((child) => {
                       const here = onPage(child.href);
                       return (
@@ -124,7 +124,7 @@ export function Sidebar({
                               'block truncate rounded-lg px-2.5 py-1.5 text-sm transition-colors',
                               here
                                 ? 'bg-highlight font-semibold text-highlight-foreground'
-                                : 'text-background/60 hover:bg-background/10 hover:text-background'
+                                : 'text-rail-foreground/60 hover:bg-rail-foreground/10 hover:text-rail-foreground'
                             )}
                           >
                             {child.label}
@@ -147,7 +147,7 @@ function rowClass(active: boolean) {
   return cn(
     'flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-colors',
     active
-      ? 'bg-background/10 text-background'
-      : 'text-background/60 hover:bg-background/10 hover:text-background'
+      ? 'bg-rail-foreground/10 text-rail-foreground'
+      : 'text-rail-foreground/60 hover:bg-rail-foreground/10 hover:text-rail-foreground'
   );
 }

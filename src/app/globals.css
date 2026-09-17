@@ -4,11 +4,15 @@
 
 @layer base {
   /*
-   * Palette sampled from the reference design rather than guessed: sage
-   * canvas #adb9b1, cream page #edeeed, near-white cards #f8f9f8, ink #17181c,
-   * lime #eefb94. Ink is the primary action colour — the reference's buttons
-   * and active pills are black — and lime is the highlight, used on exactly
-   * one card and one chart series so it keeps its force.
+   * Sage canvas #adb9b1, cream page #edeeed, near-white cards #f8f9f8, ink
+   * #17181c — all sampled from the reference design. Ink is the primary action
+   * colour, as the reference's buttons and active pills are black.
+   *
+   * The highlight is champagne #e8dcc0, not the reference's lime: at that
+   * saturation it read as loud rather than considered. Warm was chosen over
+   * another cool tone so it separates from the sage page behind it, and it is
+   * still spent in only two places — one card and one chart series — so it
+   * keeps its force.
    */
   :root {
     --canvas: 140 8% 70%;
@@ -26,8 +30,8 @@
     --muted-foreground: 130 4% 44%;
     --accent: 120 5% 88%;
     --accent-foreground: 228 10% 10%;
-    /* The one loud colour. Never a background for body text. */
-    --highlight: 68 93% 78%;
+    /* The one accent. Never a background for body text. */
+    --highlight: 41 48% 83%;
     --highlight-foreground: 228 10% 10%;
     --destructive: 4 74% 50%;
     --destructive-foreground: 0 0% 100%;
@@ -35,6 +39,11 @@
     --success-foreground: 0 0% 100%;
     --warning: 35 88% 48%;
     --warning-foreground: 228 10% 10%;
+    /* The sidebar rail. Its own token because `foreground` inverts with the
+       theme, which turned the rail into the brightest thing on a dark screen.
+       Dark, and a shade off the page, in both themes. */
+    --rail: 228 10% 10%;
+    --rail-foreground: 120 5% 97%;
     --border: 120 5% 86%;
     --input: 120 5% 84%;
     --ring: 228 10% 10%;
@@ -60,7 +69,7 @@
     --muted-foreground: 130 4% 62%;
     --accent: 228 7% 20%;
     --accent-foreground: 120 5% 96%;
-    --highlight: 68 88% 72%;
+    --highlight: 41 44% 76%;
     --highlight-foreground: 228 10% 10%;
     --destructive: 4 70% 52%;
     --destructive-foreground: 0 0% 100%;
@@ -68,9 +77,11 @@
     --success-foreground: 228 10% 10%;
     --warning: 35 88% 58%;
     --warning-foreground: 228 10% 10%;
+    --rail: 228 9% 12%;
+    --rail-foreground: 120 5% 96%;
     --border: 228 7% 20%;
     --input: 228 7% 22%;
-    --ring: 68 88% 72%;
+    --ring: 41 44% 76%;
   }
 }
 
