@@ -133,6 +133,20 @@ endpoint answers 401 to everything and none of that happens.
 ### 8. Check before you open it up
 
 ```bash
+npm run preflight
+```
+
+One command, reads only, exits non-zero when something would actually hurt — so
+it can sit in a deploy pipeline. It runs the same environment check the app
+does at startup, and then the things only the database can answer: whether the
+schema is current, whether anyone can still sign in with the seeded demo
+password, whether invoices would go out under the placeholder company, and
+whether any Indian client is missing a place of supply.
+
+Blockers stop a deploy. Warnings are choices — a mock email provider is a
+legitimate state, as long as you know nothing is reaching anyone.
+
+```bash
 npm run accounts audit     # every account, and whether any still has a demo password
 npm run db:backup          # a JSON export you can restore into an empty database
 ```

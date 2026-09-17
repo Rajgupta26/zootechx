@@ -263,6 +263,30 @@ export const campaignSchema = z.object({
 
 // ---------- Admin ----------
 
+/**
+ * Changing your own password.
+ *
+ * The current password is required, not as ceremony: an account created by an
+ * administrator has a password that administrator chose and still knows, and
+ * an unattended signed-in browser is otherwise one form submission away from
+ * being locked out of.
+ */
+export const changePasswordSchema = z.object({
+  currentPassword: z.string({ required_error: 'Enter your current password' }).min(1, 'Enter your current password'),
+  newPassword: z
+    .string({ required_error: 'Choose a new password' })
+    .min(12, 'At least 12 characters'),
+  confirmPassword: z.string({ required_error: 'Type the new password again' }),
+})
+  .refine((v) => v.newPassword === v.confirmPassword, {
+    message: 'These do not match',
+    path: ['confirmPassword'],
+  })
+  .refine((v) => v.newPassword !== v.currentPassword, {
+    message: 'That is the password you already have',
+    path: ['newPassword'],
+  });
+
 export const userSchema = z.object({
   name: z.string({ required_error: 'Give their full name' }).min(2, 'Give their full name').max(120),
   email: z.string({ required_error: 'An email address is required' }).email('That is not a valid email address'),

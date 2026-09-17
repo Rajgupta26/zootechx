@@ -38,6 +38,9 @@ const CLIENT_ALLOWED = [
   '/api/portal',
   '/api/invoices',
   '/api/sows',
+  // Changing your own password is the one thing every role may do, portal
+  // accounts included — theirs was chosen by someone here, same as everyone's.
+  '/account',
 ];
 
 export default auth((req) => {

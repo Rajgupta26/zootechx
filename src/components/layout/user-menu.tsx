@@ -2,7 +2,7 @@
 
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
-import { LogOut, Settings, ShieldCheck } from 'lucide-react';
+import { LogOut, Settings, ShieldCheck, UserCog } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -33,6 +33,12 @@ export function UserMenu({ name, email, role }: { name: string; email: string; r
           </Badge>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/account">
+            <UserCog />
+            Your account
+          </Link>
+        </DropdownMenuItem>
         {role !== 'CLIENT' && (
           <DropdownMenuItem asChild>
             <Link href="/settings">
