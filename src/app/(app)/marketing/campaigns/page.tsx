@@ -36,7 +36,7 @@ export default async function CampaignsPage({
       take,
       include: {
         brand: { select: { id: true, name: true } },
-        _count: { select: { leads: true, creatives: true } },
+        _count: { select: { leads: true } },
       },
     }),
     prisma.campaign.count({ where }),

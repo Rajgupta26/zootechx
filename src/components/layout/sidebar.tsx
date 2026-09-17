@@ -3,18 +3,23 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { ChevronLeft, Zap } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Zap } from 'lucide-react';
 import { NAV_GROUPS } from './nav-config';
 import { can, type Action, type Resource } from '@/lib/rbac';
 import { cn } from '@/lib/utils';
 import type { Role } from '@prisma/client';
 
 /**
- * Seven grouped destinations rather than nineteen flat ones.
+ * Grouped navigation, with each group opening to show the pages inside it.
  *
  * A group is only shown if the user can reach at least one page inside it, and
- * clicking it opens the first page they are allowed to see — so a Sales user
- * never lands on a permission error by using the menu.
+ * only its permitted pages are listed — so nobody can navigate their way into
+ * a permission error.
+ *
+ * The group holding the current page is open by default. Toggling one
+ * overrides that default for the rest of the session, which is why the state
+ * is a sparse record rather than a set: an absent entry means "not decided",
+ * not "closed".
  */
 export function Sidebar({
   role,
@@ -27,7 +32,10 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [toggled, setToggled] = useState<Record<string, boolean>>({});
   const actor = { role, grants };
+
+  const onPage = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   const groups = NAV_GROUPS.map((group) => ({
     ...group,
@@ -36,11 +44,13 @@ export function Sidebar({
     ),
   })).filter((group) => group.children.length > 0);
 
+  const openLabel = groups.find((g) => g.children.some((c) => onPage(c.href)))?.label;
+
   return (
     <aside
       className={cn(
         'flex h-full shrink-0 flex-col border-r bg-card transition-[width] duration-200',
-        collapsed ? 'w-[68px]' : 'w-56'
+        collapsed ? 'w-[68px]' : 'w-60'
       )}
     >
       <div className="flex h-14 items-center gap-2 border-b px-4">
@@ -58,37 +68,86 @@ export function Sidebar({
       </div>
 
       <nav className="flex-1 overflow-y-auto scrollbar-thin p-3">
-        <ul className="space-y-1">
+        <ul className="space-y-0.5">
           {groups.map((group) => {
-            const active = group.children.some(
-              (c) => pathname === c.href || pathname.startsWith(`${c.href}/`)
-            );
             const Icon = group.icon;
-            // Land on the first page this user is actually allowed to open.
-            const target = group.children[0].href;
+            const active = group.children.some((c) => onPage(c.href));
+
+            // One page inside, or no room to expand: go straight there.
+            if (group.children.length === 1 || collapsed) {
+              return (
+                <li key={group.label}>
+                  <Link
+                    href={group.children[0].href}
+                    onClick={onNavigate}
+                    title={collapsed ? group.label : undefined}
+                    className={cn(rowClass(active), collapsed && 'justify-center')}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {!collapsed && <span className="truncate">{group.label}</span>}
+                  </Link>
+                </li>
+              );
+            }
+
+            const open = toggled[group.label] ?? group.label === openLabel;
 
             return (
               <li key={group.label}>
-                <Link
-                  href={target}
-                  onClick={onNavigate}
-                  title={collapsed ? group.label : undefined}
-                  className={cn(
-                    'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors',
-                    active
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                    collapsed && 'justify-center'
-                  )}
+                <button
+                  type="button"
+                  onClick={() => setToggled((t) => ({ ...t, [group.label]: !open }))}
+                  aria-expanded={open}
+                  className={cn(rowClass(active), 'w-full')}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span className="truncate">{group.label}</span>}
-                </Link>
+                  <span className="truncate">{group.label}</span>
+                  <ChevronDown
+                    className={cn(
+                      'ml-auto h-3.5 w-3.5 shrink-0 transition-transform duration-200',
+                      open && 'rotate-180'
+                    )}
+                  />
+                </button>
+
+                {open && (
+                  <ul className="ml-[1.4rem] mt-0.5 space-y-0.5 border-l pl-2.5">
+                    {group.children.map((child) => {
+                      const here = onPage(child.href);
+                      return (
+                        <li key={child.href}>
+                          <Link
+                            href={child.href}
+                            onClick={onNavigate}
+                            title={child.hint}
+                            className={cn(
+                              'block truncate rounded-md px-2.5 py-1.5 text-sm transition-colors',
+                              here
+                                ? 'bg-primary/10 font-medium text-primary'
+                                : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                            )}
+                          >
+                            {child.label}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </li>
             );
           })}
         </ul>
       </nav>
     </aside>
+  );
+}
+
+function rowClass(active: boolean) {
+  return cn(
+    'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors',
+    active
+      ? 'bg-primary/10 text-primary'
+      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
   );
 }

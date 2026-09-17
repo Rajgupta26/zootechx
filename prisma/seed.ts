@@ -43,7 +43,6 @@ async function main() {
     prisma.webhookEvent.deleteMany(),
     prisma.credentialAccess.deleteMany(),
     prisma.credential.deleteMany(),
-    prisma.creative.deleteMany(),
     prisma.campaign.deleteMany(),
     prisma.brand.deleteMany(),
     prisma.payment.deleteMany(),

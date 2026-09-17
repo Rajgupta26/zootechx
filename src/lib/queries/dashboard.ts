@@ -216,14 +216,13 @@ export async function getDeveloperDashboard(user: CurrentUser) {
 }
 
 export async function getMarketingDashboard() {
-  const [campaigns, creativesPending, brands, syncedLeads] = await Promise.all([
+  const [campaigns, brands, syncedLeads] = await Promise.all([
     prisma.campaign.findMany({
       where: { status: { in: ['ACTIVE', 'PAUSED'] } },
       include: { brand: { select: { name: true } }, _count: { select: { leads: true } } },
       orderBy: { spend: 'desc' },
       take: 10,
     }),
-    prisma.creative.count({ where: { status: 'PENDING_REVIEW' } }),
     prisma.brand.count(),
     prisma.lead.count({ where: { source: { in: ['META_ADS', 'GOOGLE_ADS', 'LINKEDIN'] } } }),
   ]);
@@ -234,7 +233,6 @@ export async function getMarketingDashboard() {
 
   return {
     campaigns,
-    creativesPending,
     brands,
     syncedLeads,
     totalSpend,
@@ -293,7 +291,7 @@ export async function getDepartmentPanels() {
   const [
     openLeads, pipeline, overdueFollowUps, wonThisMonth, strayLeads,
     memberships, openIssues, weekHours, loggedToday, unstaffedProjects,
-    campaigns, pendingCreatives, brands,
+    campaigns, brands,
   ] = await Promise.all([
     prisma.lead.groupBy({
       by: ['ownerId'], where: { deletedAt: null, status: OPEN_LEAD }, _count: true,
@@ -342,9 +340,6 @@ export async function getDepartmentPanels() {
         _count: { select: { leads: true } },
       },
     }),
-    prisma.creative.groupBy({
-      by: ['brandId'], where: { status: 'PENDING_REVIEW' }, _count: true,
-    }),
     prisma.brand.findMany({ select: { id: true, ownerId: true } }),
   ]);
 
@@ -388,10 +383,6 @@ export async function getDepartmentPanels() {
     const spend = mine.reduce((a, c) => a + toMinor(c.spend.toString()), 0n);
     const budget = mine.reduce((a, c) => a + toMinor(c.budget.toString()), 0n);
     const revenue = mine.reduce((a, c) => a + toMinor(c.revenue.toString()), 0n);
-    const pending = pendingCreatives
-      .filter((c) => brandOwner.get(c.brandId) === u.id)
-      .reduce((a, c) => a + c._count, 0);
-
     return {
       id: u.id,
       name: u.name,
@@ -401,7 +392,6 @@ export async function getDepartmentPanels() {
       budget: toNumber(budget),
       roas: spend > 0n ? toNumber(revenue) / toNumber(spend) : 0,
       leads: mine.reduce((a, c) => a + c._count.leads, 0),
-      pendingCreatives: pending,
     };
   });
 

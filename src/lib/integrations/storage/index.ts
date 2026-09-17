@@ -4,7 +4,7 @@ import path from 'node:path';
 import type { StorageProvider, StoredObject } from '../types';
 
 /**
- * Object storage for invoice PDFs, ad creatives, and client attachments.
+ * Object storage for invoice PDFs, proposals and client attachments.
  *
  * Local disk is the default so nothing external is needed in development.
  * S3/R2 is a signature-compatible drop-in, selected with STORAGE_PROVIDER.
@@ -134,7 +134,3 @@ export function invoicePdfKey(invoiceNumber: string, issueDate: Date): string {
   return `invoices/${y}/${m}/${safe}.pdf`;
 }
 
-export function creativeKey(brandId: string, filename: string): string {
-  const safe = filename.replace(/[^\w.-]/g, '_');
-  return `creatives/${brandId}/${Date.now()}_${safe}`;
-}

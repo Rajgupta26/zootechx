@@ -21,7 +21,7 @@ export default async function BrandsPage() {
     include: {
       client: { select: { id: true, name: true } },
       campaigns: { select: { spend: true, revenue: true, status: true } },
-      _count: { select: { campaigns: true, creatives: true } },
+      _count: { select: { campaigns: true } },
     },
   });
 
@@ -29,7 +29,7 @@ export default async function BrandsPage() {
     <>
       <PageHeader
         title="Brands"
-        subtitle="Each brand groups campaigns and creative assets, and links back to a CRM client."
+        subtitle="Each brand groups campaigns and brand assets, and links back to a CRM client."
       />
 
       {brands.length === 0 ? (
@@ -80,7 +80,6 @@ export default async function BrandsPage() {
                   <div className="flex flex-wrap gap-1.5">
                     <Badge variant="muted">{b._count.campaigns} campaigns</Badge>
                     {active > 0 && <Badge variant="success">{active} active</Badge>}
-                    <Badge variant="muted">{b._count.creatives} creatives</Badge>
                   </div>
                 </CardContent>
               </Card>

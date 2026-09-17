@@ -15,7 +15,7 @@ import type { Role } from '@prisma/client';
 export const RESOURCES = [
   'dashboard', 'lead', 'client', 'followup', 'sow', 'project',
   'milestone', 'progresslog', 'issue', 'task', 'invoice', 'payment', 'expense',
-  'credential', 'brand', 'campaign', 'creative', 'user', 'audit', 'settings',
+  'credential', 'brand', 'campaign', 'user', 'audit', 'settings',
   'portal', 'notification', 'report',
 ] as const;
 
@@ -46,7 +46,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'payment:read', 'payment:create', 'payment:update',
     'expense:read', 'expense:create', 'expense:update', 'expense:approve',
     'credential:read', 'credential:reveal',
-    'brand:read', 'campaign:read', 'creative:read', 'creative:approve',
+    'brand:read', 'campaign:read',
     'user:read', 'user:create', 'user:update',
     'notification:read', 'notification:update',
     'settings:read',
@@ -82,7 +82,6 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'dashboard:read',
     'brand:read', 'brand:create', 'brand:update',
     'campaign:read', 'campaign:create', 'campaign:update',
-    'creative:read', 'creative:create', 'creative:update',
     'lead:read', 'lead:create',
     'client:read',
     'task:read', 'task:update',
@@ -107,7 +106,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
 export const OWN_SCOPED: Partial<Record<Role, Permission[]>> = {
   SALES: ['lead:read', 'lead:update', 'lead:delete', 'followup:read', 'followup:update'],
   DEVELOPER: ['project:read', 'project:update', 'milestone:update', 'progresslog:update', 'task:update'],
-  MARKETING: ['brand:update', 'campaign:update', 'creative:update'],
+  MARKETING: ['brand:update', 'campaign:update'],
   CLIENT: ['project:read', 'milestone:read', 'sow:read', 'invoice:read', 'payment:read'],
 };
 

@@ -144,7 +144,7 @@ function SoftwarePanel({ data }: { data: Data['software'] }) {
 
 function MarketingPanel({ data }: { data: Data['marketing'] }) {
   const totalActive = data.rows.reduce((a, r) => a + r.activeCampaigns, 0);
-  const totalPending = data.rows.reduce((a, r) => a + r.pendingCreatives, 0);
+  const overspending = data.rows.filter((r) => r.budget > 0 && r.spend > r.budget * 0.9).length;
 
   return (
     <Panel
@@ -152,7 +152,9 @@ function MarketingPanel({ data }: { data: Data['marketing'] }) {
       icon={Megaphone}
       href="/marketing/campaigns"
       headline={`${totalActive} live campaign${totalActive === 1 ? '' : 's'}`}
-      alert={totalPending > 0 ? `${totalPending} awaiting approval` : undefined}
+      alert={overspending > 0
+        ? `${overspending} over 90% of budget`
+        : undefined}
       empty={data.rows.length === 0 ? 'No marketing users yet.' : undefined}
     >
       {data.rows.map((person) => {
@@ -178,9 +180,6 @@ function MarketingPanel({ data }: { data: Data['marketing'] }) {
               tone={person.roas >= 2 ? 'ok' : person.roas >= 1 ? 'warn' : 'danger'}
             />
             {person.leads > 0 && <Badge variant="secondary">{person.leads} leads synced</Badge>}
-            {person.pendingCreatives > 0 && (
-              <Badge variant="warning">{person.pendingCreatives} to approve</Badge>
-            )}
             {person.budget > 0 && (
               <Progress
                 value={Math.min(pacing, 100)}

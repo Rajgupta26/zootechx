@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Megaphone, Palette, Target, TrendingUp, Users } from 'lucide-react';
+import { Megaphone, Target, TrendingUp, Users } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -44,26 +44,6 @@ export function MarketingDashboard({ data }: { data: Data }) {
         />
       </div>
 
-      {data.creativesPending > 0 && (
-        <Card className="border-warning/40 bg-warning/5">
-          <CardContent className="flex items-center justify-between gap-3 p-4">
-            <div className="flex items-start gap-3">
-              <Palette className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-              <div>
-                <p className="text-sm font-medium">
-                  {data.creativesPending} creative{data.creativesPending === 1 ? '' : 's'} awaiting approval
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Approve them before they can go live on a campaign.
-                </p>
-              </div>
-            </div>
-            <Button size="sm" asChild>
-              <Link href="/marketing/studio">Review</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
 
       <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">

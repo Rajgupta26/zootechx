@@ -24,7 +24,6 @@ export default async function CampaignDetail({ params }: { params: Promise<{ id:
     where: { id, ...scopeFilter(user, 'campaign') },
     include: {
       brand: { select: { id: true, name: true } },
-      creatives: { orderBy: { createdAt: 'desc' } },
       leads: {
         orderBy: { createdAt: 'desc' },
         take: 20,
@@ -116,68 +115,38 @@ export default async function CampaignDetail({ params }: { params: Promise<{ id:
         </CardContent>
       </Card>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-base">Creatives</CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/marketing/studio">Open studio</Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {campaign.creatives.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">No creatives yet.</p>
-            ) : (
-              <ul className="divide-y">
-                {campaign.creatives.map((c) => (
-                  <li key={c.id} className="flex items-center gap-3 py-2.5">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Leads from this campaign</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {campaign.leads.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No leads attributed yet.
+            </p>
+          ) : (
+            <ul className="divide-y">
+              {campaign.leads.map((lead) => (
+                <li key={lead.id}>
+                  <Link
+                    href={`/leads/${lead.id}`}
+                    className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-accent/50"
+                  >
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{c.name}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {c.format} · {c.headline ?? 'No headline'}
-                      </p>
+                      <p className="truncate text-sm font-medium">{lead.name}</p>
+                      {lead.company && (
+                        <p className="truncate text-xs text-muted-foreground">{lead.company}</p>
+                      )}
                     </div>
-                    <StatusBadge status={c.status} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Leads from this campaign</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {campaign.leads.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">
-                No leads attributed yet.
-              </p>
-            ) : (
-              <ul className="divide-y">
-                {campaign.leads.map((lead) => (
-                  <li key={lead.id}>
-                    <Link
-                      href={`/leads/${lead.id}`}
-                      className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-accent/50"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{lead.name}</p>
-                        {lead.company && (
-                          <p className="truncate text-xs text-muted-foreground">{lead.company}</p>
-                        )}
-                      </div>
-                      <StatusBadge status={lead.status} />
-                      <span className="text-xs text-muted-foreground">{formatDate(lead.createdAt)}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                    <StatusBadge status={lead.status} />
+                    <span className="text-xs text-muted-foreground">{formatDate(lead.createdAt)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </>
   );
 }

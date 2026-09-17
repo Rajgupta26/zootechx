@@ -259,7 +259,7 @@ export async function seedDelivery(prisma: typeof PrismaSingleton, ctx: Ctx) {
     { title: 'Follow up on Vertex SOW signature', assignee: sales.id, creator: subAdmin.id, priority: 'URGENT' as const, status: 'TODO' as const, dept: 'sales', due: daysAhead(1) },
     { title: 'Ship POS adapter backoff fix', assignee: dev.id, creator: subAdmin.id, priority: 'URGENT' as const, status: 'IN_PROGRESS' as const, dept: 'dev', project: project1.id, due: daysAhead(2) },
     { title: 'PWA offline cache strategy', assignee: dev2.id, creator: dev.id, priority: 'MEDIUM' as const, status: 'TODO' as const, dept: 'dev', project: project1.id, due: daysAhead(6) },
-    { title: 'Refresh Meta creative set for GreenLeaf', assignee: marketing.id, creator: subAdmin.id, priority: 'MEDIUM' as const, status: 'REVIEW' as const, dept: 'marketing', due: daysAhead(4) },
+    { title: 'Refresh Meta ad set for GreenLeaf', assignee: marketing.id, creator: subAdmin.id, priority: 'MEDIUM' as const, status: 'REVIEW' as const, dept: 'marketing', due: daysAhead(4) },
     { title: 'Reconcile November payment gateway settlements', assignee: subAdmin.id, creator: superAdmin.id, priority: 'MEDIUM' as const, status: 'DONE' as const, dept: 'finance', due: daysAgo(5) },
     { title: 'Rotate staging database credentials', assignee: dev.id, creator: superAdmin.id, priority: 'LOW' as const, status: 'TODO' as const, dept: 'dev', due: daysAhead(14) },
   ];
@@ -467,7 +467,7 @@ export async function seedDelivery(prisma: typeof PrismaSingleton, ctx: Ctx) {
   });
 
   // ---------- Marketing ----------
-  console.log('   Brands, campaigns, ad creatives…');
+  console.log('   Brands and campaigns…');
 
   const brand1 = await prisma.brand.create({
     data: {
@@ -483,7 +483,7 @@ export async function seedDelivery(prisma: typeof PrismaSingleton, ctx: Ctx) {
       name: 'Vertex Fintech', clientId: vertex.id, ownerId: marketing.id,
       industry: 'Financial Services', website: 'https://vertexfin.test',
       primaryColor: '#1A365D', secondaryColor: '#4299E1',
-      notes: 'Compliance review required on every creative before it goes live.',
+      notes: 'Compliance review required on every campaign before it goes live.',
     },
   });
 
@@ -514,28 +514,6 @@ export async function seedDelivery(prisma: typeof PrismaSingleton, ctx: Ctx) {
     );
   }
 
-  const creativeSeeds = [
-    { name: 'Festive Hamper — Feed 1:1', brand: brand1.id, campaign: campaigns[0].id, platform: 'META' as const, format: 'feed', status: 'LIVE' as const, headline: 'Organic hampers, delivered fresh', primary: 'Hand-picked produce from certified organic farms. Subscribe this festive season and save 20% on your first three boxes.', cta: 'Shop Now' },
-    { name: 'Festive Hamper — Story 9:16', brand: brand1.id, campaign: campaigns[0].id, platform: 'META' as const, format: 'story', status: 'LIVE' as const, headline: '20% off your first 3 boxes', primary: 'Fresh, organic, and at your door every week.', cta: 'Subscribe' },
-    { name: 'Brand Search — RSA headlines', brand: brand1.id, campaign: campaigns[1].id, platform: 'GOOGLE' as const, format: 'search', status: 'APPROVED' as const, headline: 'GreenLeaf Organics — Official Store', primary: 'Certified organic produce. Free delivery over ₹999.', cta: 'Visit Site' },
-    { name: 'SME Lending — Sponsored Content', brand: brand2.id, campaign: campaigns[2].id, platform: 'LINKEDIN' as const, format: 'feed', status: 'LIVE' as const, headline: 'Working capital in 48 hours', primary: 'Vertex gives growing businesses a credit line without the paperwork marathon. Regulated and RBI-compliant.', cta: 'Learn More' },
-    { name: 'SME Lending — Variant B', brand: brand2.id, campaign: campaigns[2].id, platform: 'LINKEDIN' as const, format: 'feed', status: 'PENDING_REVIEW' as const, headline: 'Credit that moves at your speed', primary: 'Apply in ten minutes. Decisions in two days. No collateral for lines under ₹50L.', cta: 'Apply Now' },
-    { name: 'Retargeting — Carousel', brand: brand2.id, campaign: campaigns[3].id, platform: 'META' as const, format: 'feed', status: 'PENDING_REVIEW' as const, headline: 'Still thinking it over?', primary: 'Your application is saved. Pick up where you left off.', cta: 'Continue' },
-  ];
-
-  for (const c of creativeSeeds) {
-    await prisma.creative.create({
-      data: {
-        name: c.name, brandId: c.brand, campaignId: c.campaign,
-        platform: c.platform, format: c.format, status: c.status,
-        headline: c.headline, primaryText: c.primary,
-        ctaLabel: c.cta, destinationUrl: 'https://example.test/landing',
-        reviewerId: c.status === 'APPROVED' || c.status === 'LIVE' ? marketing.id : null,
-        reviewedAt: c.status === 'APPROVED' || c.status === 'LIVE' ? daysAgo(5) : null,
-      },
-    });
-  }
-
   // Attribute a couple of leads to paid campaigns so marketing→CRM sync is visible.
   const paidLeads = await prisma.lead.findMany({
     where: { source: { in: ['META_ADS', 'GOOGLE_ADS'] } },
@@ -560,11 +538,10 @@ export async function seedDelivery(prisma: typeof PrismaSingleton, ctx: Ctx) {
       { userId: subAdmin.id, type: 'SOW_VIEWED', title: 'SOW/2026/0002 was opened', body: 'Vertex Fintech viewed the statement of work.', linkUrl: '/sows', isRead: false },
       { userId: sales.id, type: 'FOLLOWUP_OVERDUE', title: '2 overdue follow-ups', body: 'Discovery call — fleet tracking scope, and 1 more.', linkUrl: '/follow-ups', isRead: false },
       { userId: dev.id, type: 'TASK_ASSIGNED', title: 'Task assigned: Ship POS adapter backoff fix', linkUrl: '/tasks', isRead: false },
-      { userId: marketing.id, type: 'SYSTEM', title: '2 creatives awaiting approval', linkUrl: '/marketing/studio', isRead: false },
     ],
   });
 
   console.log(`\n   ✓ 2 SOWs (1 signed), 3 projects, ${issueSeeds.length} issues, 5 invoices`);
-  console.log(`   ✓ ${credentials.length} vault secrets, ${campaigns.length} campaigns, ${creativeSeeds.length} creatives`);
+  console.log(`   ✓ ${credentials.length} vault secrets, ${campaigns.length} campaigns`);
   console.log(`\n   🔗 Live SOW signing link:  /sign/${sowToken}`);
 }

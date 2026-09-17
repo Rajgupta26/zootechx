@@ -253,21 +253,6 @@ export const campaignSchema = z.object({
   endDate: z.string().optional(),
 });
 
-export const creativeSchema = z.object({
-  name: z.string().min(2).max(160),
-  brandId: z.string().min(1),
-  campaignId: z.string().optional(),
-  platform: z.enum(['META', 'GOOGLE', 'LINKEDIN', 'YOUTUBE', 'X']).default('META'),
-  format: z.string().max(40).default('feed'),
-  status: z.enum(['DRAFT', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'LIVE', 'ARCHIVED']).default('DRAFT'),
-  headline: z.string().max(120).optional(),
-  primaryText: z.string().max(600).optional(),
-  description: z.string().max(200).optional(),
-  ctaLabel: z.string().max(40).optional(),
-  destinationUrl: z.string().url().optional().or(z.literal('')),
-  assetUrl: z.string().optional(),
-});
-
 // ---------- Admin ----------
 
 export const userSchema = z.object({

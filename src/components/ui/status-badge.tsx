@@ -27,9 +27,8 @@ const VARIANTS: Record<string, BadgeProps['variant']> = {
   OPEN: 'destructive', TRIAGED: 'warning', RESOLVED: 'success', WONT_FIX: 'muted',
   // Priority
   LOW: 'muted', MEDIUM: 'secondary', HIGH: 'warning', URGENT: 'destructive',
-  // Campaign / Creative
+  // Campaign
   ACTIVE: 'success', PAUSED: 'warning', ARCHIVED: 'muted',
-  LIVE: 'success',
   // Message
   QUEUED: 'muted', SENDING: 'warning', DELIVERED_MSG: 'success', DEAD_LETTER: 'destructive',
   // User

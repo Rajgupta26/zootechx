@@ -1,7 +1,7 @@
 import {
   Bug, Building2, ClipboardList, CreditCard, FolderKanban, KeyRound,
   LayoutDashboard, ListChecks, Megaphone, Palette, PhoneCall, Receipt,
-  ScrollIcon, ScrollText, Settings, TrendingUp, UserCog, Users, Wallet,
+  ScrollIcon, ScrollText, Settings, UserCog, Users, Wallet,
   type LucideIcon,
 } from 'lucide-react';
 import type { Resource, Action } from '@/lib/rbac';
@@ -11,7 +11,7 @@ import type { Resource, Action } from '@/lib/rbac';
  *
  * Grouped rather than flat: nineteen sidebar entries meant users had to
  * remember which of six headings held the page they wanted. Now there are
- * seven doors, and the pages inside a group appear as tabs once you are in it.
+ * seven doors, and each one opens in the sidebar to show the pages inside.
  *
  * Every route keeps its original URL — the grouping is presentation only, so
  * existing links and bookmarks still work.
@@ -87,8 +87,6 @@ export const NAV_GROUPS: NavGroup[] = [
         hint: 'Ads running, and what they cost' },
       { label: 'Brands', href: '/marketing/brands', icon: Palette, permission: ['brand', 'read'],
         hint: 'Who you run campaigns for' },
-      { label: 'Ad studio', href: '/marketing/studio', icon: TrendingUp, permission: ['creative', 'read'],
-        hint: 'Write an ad and preview it' },
     ],
   },
   {
@@ -114,19 +112,12 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-/** The group that owns a path, for highlighting and for the tab strip. */
-export function findGroupForPath(pathname: string): NavGroup | undefined {
-  return NAV_GROUPS.find((g) =>
-    g.children.some((c) => pathname === c.href || pathname.startsWith(`${c.href}/`))
-  );
-}
-
 /** Role-specific dashboard titles, matching the spec's named workspaces. */
 export const DASHBOARD_TITLES: Record<string, { title: string; subtitle: string }> = {
   SUPER_ADMIN: { title: 'Command Centre', subtitle: 'Full operational view across every department' },
   SUB_ADMIN: { title: 'Operations Desk', subtitle: 'Day-to-day delivery, billing and team throughput' },
   SALES: { title: 'Sales Radar', subtitle: 'Your pipeline, follow-ups and conversions' },
   DEVELOPER: { title: 'Dev Pulse', subtitle: 'Your projects, issues and delivery status' },
-  MARKETING: { title: 'Marketing Overview', subtitle: 'Campaign performance, spend and creative pipeline' },
+  MARKETING: { title: 'Marketing Overview', subtitle: 'Campaign performance, spend and brand pipeline' },
   CLIENT: { title: 'Client Portal', subtitle: 'Your projects, documents and invoices' },
 };

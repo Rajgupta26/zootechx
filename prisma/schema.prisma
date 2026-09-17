@@ -217,15 +217,6 @@ enum CampaignStatus {
   ARCHIVED
 }
 
-enum CreativeStatus {
-  DRAFT
-  PENDING_REVIEW
-  APPROVED
-  REJECTED
-  LIVE
-  ARCHIVED
-}
-
 enum MessageChannel {
   EMAIL
   WHATSAPP
@@ -1190,7 +1181,6 @@ model Brand {
   updatedAt DateTime @updatedAt
 
   campaigns Campaign[]
-  creatives Creative[]
 
   @@index([clientId])
 }
@@ -1223,41 +1213,10 @@ model Campaign {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  creatives Creative[]
   leads     Lead[]
 
   @@index([brandId, status])
   @@index([platform, status])
-}
-
-model Creative {
-  id         String         @id @default(cuid())
-  name       String
-  brandId    String
-  brand      Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  campaignId String?
-  campaign   Campaign?      @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  platform   AdPlatform     @default(META)
-  format     String         @default("feed") // feed | story | reel | search | display
-  status     CreativeStatus @default(DRAFT)
-
-  headline    String?
-  primaryText String?
-  description String?
-  ctaLabel    String?  @default("Learn More")
-  destinationUrl String?
-  assetKey    String?
-  assetUrl    String?
-
-  reviewerId String?
-  reviewedAt DateTime?
-  reviewNote String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([brandId, status])
-  @@index([campaignId])
 }
 
 // ============================================================
